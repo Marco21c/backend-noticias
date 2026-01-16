@@ -1,19 +1,5 @@
-
-import mongoose, { Schema, Document } from 'mongoose';
-
-export interface INoticia extends Document {
-  titulo: string;
-  slug: string;
-  copete: string;
-  contenido: string;
-  frasesDestacadas: string[];
-  autor: string;
-  categoria: string;
-  imagenPrincipal?: string;
-  fuente?: string;
-  estado: 'borrador' | 'publicada';
-  fechaPublicacion: Date;
-}
+import mongoose, { Schema } from 'mongoose';
+import type { INoticia } from '../interfaces/noticia.interface.js';
 
 const NoticiaSchema: Schema = new Schema(
   {
