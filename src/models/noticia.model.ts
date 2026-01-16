@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import type { INoticia } from '../interfaces/noticia.interface.js';
+import type { INoticia } from '../interfaces/noticia.interface.ts';
 
 const NoticiaSchema: Schema = new Schema(
   {
