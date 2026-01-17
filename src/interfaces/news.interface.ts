@@ -1,4 +1,4 @@
-export interface INew {
+export interface INews {
   _id?: string;
   title: string;
   slug: string;

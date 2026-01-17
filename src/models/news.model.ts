@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import type { INew } from '../interfaces/news.interface.ts';
+import type { INews } from '../interfaces/news.interface.ts';
 
 const NewsSchema: Schema = new Schema(
   {
@@ -25,4 +25,4 @@ const NewsSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-export default mongoose.model<INew>('News', NewsSchema);
+export default mongoose.model<INews>('News', NewsSchema);

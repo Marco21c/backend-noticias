@@ -23,6 +23,37 @@ export class NewsController {
         }
     }
 
+    async editNews(req: Request, res: Response): Promise<Response> {
+        try {
+            const idFromParams = req.params.id;
+            let id: string | undefined = undefined;
+
+            if (idFromParams && typeof idFromParams === 'string') {
+                id = idFromParams;
+            } else if (req.query && typeof req.query._id === 'string') {
+                id = req.query._id;
+            } else if (req.query && Array.isArray(req.query._id) && typeof req.query._id[0] === 'string') {
+                id = req.query._id[0];
+            }
+
+            const newsData = req.body;
+
+            if (!id) {
+                return res.status(400).json({ message: 'Invalid news ID' });
+            }
+
+            const edited = await new NewsService().editNews(id, newsData);
+
+            if (!edited) {
+                return res.status(404).json({ message: 'News not found' });
+            }
+
+            return res.status(200).json({ message: 'News edited successfully', data: edited });
+        } catch (error) {
+            return res.status(500).json({ message: 'Error editing news', error });
+        }
+    }
+
     async deleteNews(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
