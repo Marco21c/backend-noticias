@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { newsController } from '../controllers/news.controller.ts';
+
+const newsRouter = Router();
+
+newsRouter.get('/', newsController.getNews);
+newsRouter.post('/', newsController.createNews);
+newsRouter.get('/:id', newsController.getNewsById);
+newsRouter.put('/', newsController.editNews);
+newsRouter.delete('/:id', newsController.deleteNews);
+
+export default newsRouter;
