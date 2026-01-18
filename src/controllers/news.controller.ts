@@ -23,6 +23,26 @@ export class NewsController {
         }
     }
 
+    async getNewsById(req: Request, res: Response): Promise<Response> {
+        try {
+            const { id } = req.params;
+
+            if (!id || typeof id !== 'string') {
+                return res.status(400).json({ message: 'Invalid news ID' });
+            }
+
+            const news = await new NewsService().getNewsById(id);
+
+            if (!news) {
+                return res.status(404).json({ message: 'News not found' });
+            }
+
+            return res.status(200).json(news);
+        } catch (error) {
+            return res.status(500).json({ message: 'Error retrieving news', error });
+        }
+    }
+
     async editNews(req: Request, res: Response): Promise<Response> {
         try {
             const idFromParams = req.params.id;

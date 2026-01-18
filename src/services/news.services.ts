@@ -9,13 +9,17 @@ export class NewsService {
         return NewsModel.find();
     }
 
-    async editNews(id: string, newsData: Partial<INews>): Promise<INews | null> {
-        return NewsModel.findByIdAndUpdate(id, newsData, { new: true });
-    }
-    
     async createNews(newsData: INews): Promise<INews> {
         const newNews = new NewsModel(newsData);
         return newNews.save();
+    }
+
+    async getNewsById(id: string): Promise<INews | null> {
+        return NewsModel.findById(id);
+    }
+
+    async editNews(id: string, newsData: Partial<INews>): Promise<INews | null> {
+        return NewsModel.findByIdAndUpdate(id, newsData, { new: true });
     }
 
     async deleteNews(id: string): Promise<INews | null> {
