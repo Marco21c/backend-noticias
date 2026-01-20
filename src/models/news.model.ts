@@ -17,7 +17,7 @@ const NewsSchema: Schema = new Schema(
     source: { type: String },
     variant : { type: String,
       enum: ['highlighted', 'featured', 'default'],
-      default: 'politic',
+      default: 'default',
       required: true 
     },
     status: {
