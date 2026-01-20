@@ -15,14 +15,14 @@ const envSchema = z.object({
   PORT_PROD: z.coerce.number().int().positive().optional(),
   
   // Base de datos
-  MONGODB_URI: z.string().url('MONGODB_URI debe ser una URL válida'),
+  MONGODB_URI: z.url('MONGODB_URI debe ser una URL válida'),
   
   // URLs del frontend (consistencia con otros archivos)
-  FRONTEND_URL: z.string().url().optional(),
-  FRONTEND_DEV_URL: z.string().url().default('http://localhost:5173'),
-  CLIENT_URL: z.string().url().optional(),
-  CLIENT_DEV_URL: z.string().url().optional(),
-  APP_URL: z.string().url().optional(),
+  FRONTEND_URL: z.url().optional(),
+  FRONTEND_DEV_URL: z.url().default('http://localhost:5173'),
+  CLIENT_URL: z.url().optional(),
+  CLIENT_DEV_URL: z.url().optional(),
+  APP_URL: z.url().optional(),
   
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres').optional(),
