@@ -7,7 +7,9 @@ const corsOptions: CorsOptions = {
             process.env.CLIENT_URL,
             process.env.CLIENT_DEV_URL,
             process.env.APP_URL,
-        ];
+        ].filter(Boolean);
+
+        console.log("Origen recibido:", origin);
 
         // * Si no hay origen, se permite Postman, curl, etc.
         if (!origin) {
