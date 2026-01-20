@@ -1,12 +1,9 @@
 import dotenv from 'dotenv';
 import { z, ZodError } from 'zod';
 
-// Cargar variables de entorno (solo una vez)
 dotenv.config();
 
-// Schema de validación para variables de entorno
 const envSchema = z.object({
-  // Entorno
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   
   // Puertos
@@ -15,21 +12,30 @@ const envSchema = z.object({
   PORT_PROD: z.coerce.number().int().positive().optional(),
   
   // Base de datos
-  MONGODB_URI: z.url('MONGODB_URI debe ser una URL válida'),
+  MONGODB_URI: z.string().optional(), // Producción
+  MONGODB_DEV: z.string().optional(), // Desarrollo
   
-  // URLs del frontend (consistencia con otros archivos)
-  FRONTEND_URL: z.url().optional(),
-  FRONTEND_DEV_URL: z.url().default('http://localhost:5173'),
-  CLIENT_URL: z.url().optional(),
-  CLIENT_DEV_URL: z.url().optional(),
-  APP_URL: z.url().optional(),
+  // URLs
+  CLIENT_URL: z.string().optional(),
+  CLIENT_DEV_URL: z.string().optional(),
+  APP_URL: z.string().optional(),
   
   // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres').optional(),
+  JWT_SECRET: z.string().min(32).optional(),
   JWT_EXPIRES_IN: z.string().default('7d'),
-});
+}).refine(
+  (data) => {
+    // Validar que exista MONGODB_URI en producción o MONGODB_DEV en desarrollo
+    if (data.NODE_ENV === 'production') {
+      return !!data.MONGODB_URI;
+    }
+    return !!data.MONGODB_DEV;
+  },
+  {
+    message: 'Se requiere MONGODB_URI en producción o MONGODB_DEV en desarrollo',
+  }
+);
 
-// Validar y exportar con manejo de errores
 function validateEnv() {
   try {
     return envSchema.parse(process.env);
@@ -40,7 +46,7 @@ function validateEnv() {
         const path = issue.path.join('.');
         console.error(`  - ${path || 'raíz'}: ${issue.message}`);
       });
-      console.error('\n💡 Asegúrate de configurar todas las variables requeridas en tu archivo .env');
+      console.error('\n💡 Revisa tu archivo .env');
       process.exit(1);
     }
     throw error;
