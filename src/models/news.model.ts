@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import type { INews } from '../interfaces/news.interface.ts';
+import type { INews } from '../interfaces/news.interface.js';
 
 const NewsSchema: Schema = new Schema(
   {
