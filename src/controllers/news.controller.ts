@@ -43,6 +43,27 @@ export class NewsController {
         }
     }
 
+    async getNewsByCategory(req: Request, res: Response): Promise<Response> {
+        try {
+            const category = req.query.category;
+
+            if (!category || typeof category !== 'string') {
+                return res.status(400).json({ message: 'Invalid news Category' });
+            }
+
+            const news = await new NewsService().getNewsByCategory(category);
+
+            if (!news || news.length === 0) {
+                return res.status(404).json({ message: 'No news found for this category' });
+            }
+
+            return res.status(200).json(news);
+        } catch (error) {
+            return res.status(500).json({ message: 'Error retrieving news', error });
+        }
+    }
+
+
     async editNews(req: Request, res: Response): Promise<Response> {
         try {
             const idFromParams = req.params.id;

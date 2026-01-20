@@ -18,6 +18,10 @@ export class NewsService {
         return NewsModel.findById(id);
     }
 
+    async getNewsByCategory(category: string): Promise<INews[]> {
+        return NewsModel.find({ category }).exec();
+    }
+
     async editNews(id: string, newsData: Partial<INews>): Promise<INews | null> {
         return NewsModel.findByIdAndUpdate(id, newsData, { new: true });
     }

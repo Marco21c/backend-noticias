@@ -9,6 +9,7 @@ export interface INews {
   category: 'politic' | 'economy' | 'sports' | 'technology' | 'health' | 'entertainment' | 'science' | 'world' | 'local' | 'education' | 'travel' | 'lifestyle' | 'international';
   mainImage?: string;
   source?: string;
+  variant: 'highlighted'| 'featured'| 'default',
   status: 'draft' | 'published';
   publicationDate: Date;
   createdAt?: Date;

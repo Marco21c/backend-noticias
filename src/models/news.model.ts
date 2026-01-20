@@ -15,6 +15,11 @@ const NewsSchema: Schema = new Schema(
       required: true },
     mainImage: { type: String },
     source: { type: String },
+    variant : { type: String,
+      enum: ['highlighted', 'featured', 'default'],
+      default: 'default',
+      required: true 
+    },
     status: {
       type: String,
       enum: ['draft', 'published'],
