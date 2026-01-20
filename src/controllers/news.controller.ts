@@ -1,6 +1,6 @@
 // TODO: Implementar controller de News
 import type { Request, Response } from 'express';
-import { NewsService } from '../services/news.services.ts';
+import { NewsService } from '../services/news.services.js';
 
 export class NewsController {
 
