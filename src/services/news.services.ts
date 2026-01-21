@@ -1,4 +1,3 @@
-// TODO: Implementar logica de servicio para noticias
 
 import type { INews } from '../interfaces/news.interface.js';
 import NewsModel from '../models/news.model.js';
