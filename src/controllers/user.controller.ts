@@ -66,7 +66,6 @@ export class UserController {
 			}
 
 			const userData = req.body;
-            console.log("aca estaria el id :",id)
 			if (!id) return res.status(400).json({ message: 'Invalid user ID' });
 
 			const edited = await new UserService().updateUser(id, userData);
