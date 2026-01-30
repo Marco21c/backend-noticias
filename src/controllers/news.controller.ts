@@ -6,20 +6,41 @@ export class NewsController {
 
     async getNews(req: Request, res: Response): Promise<Response> {
         try {
-            const news = await new NewsService().getAllNews();
+            const { status, author } = req.query;
+            const filters: { status?: string; author?: string } = {};
+            
+            if (status && typeof status === 'string') {
+                filters.status = status;
+            }
+            
+            if (author && typeof author === 'string') {
+                filters.author = author;
+            }
+            
+            const news = await new NewsService().getAllNews(
+                Object.keys(filters).length > 0 ? filters : undefined
+            );
+            
             return res.status(200).json(news);
         } catch (error) {
-            return res.status(500).json({ message: 'Error retrieving news', error });
+            return res.status(500).json({ message: 'Error al obtener noticias', error });
         }
     }
 
     async createNews(req: Request, res: Response): Promise<Response> {
         try {
             const newsData = req.body;
-            const newNews = await new NewsService().createNews(newsData);
-            return res.status(201).json({ message: 'News created successfully', data: newNews });
+            const user = (req as any).user;
+            
+            if (!user || !user._id) {
+                return res.status(401).json({ message: 'Usuario no autenticado' });
+            }
+            
+            // Pasar explícitamente el authorId al service
+            const newNews = await new NewsService().createNews(newsData, user._id);
+            return res.status(201).json({ message: 'Noticia creada exitosamente', data: newNews });
         } catch (error) {
-            return res.status(500).json({ message: 'Error creating news', error });
+            return res.status(500).json({ message: 'Error al crear noticia', error });
         }
     }
 
@@ -28,18 +49,18 @@ export class NewsController {
             const { id } = req.params;
 
             if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'Invalid news ID' });
+                return res.status(400).json({ message: 'ID de noticia inválido' });
             }
 
             const news = await new NewsService().getNewsById(id);
 
             if (!news) {
-                return res.status(404).json({ message: 'News not found' });
+                return res.status(404).json({ message: 'Noticia no encontrada' });
             }
 
             return res.status(200).json(news);
         } catch (error) {
-            return res.status(500).json({ message: 'Error retrieving news', error });
+            return res.status(500).json({ message: 'Error al obtener noticia', error });
         }
     }
 
@@ -48,18 +69,18 @@ export class NewsController {
             const category = req.query.category;
 
             if (!category || typeof category !== 'string') {
-                return res.status(400).json({ message: 'Invalid news Category' });
+                return res.status(400).json({ message: 'Categoría de noticia inválida' });
             }
 
             const news = await new NewsService().getNewsByCategory(category);
 
             if (!news || news.length === 0) {
-                return res.status(404).json({ message: 'No news found for this category' });
+                return res.status(404).json({ message: 'No se encontraron noticias para esta categoría' });
             }
 
             return res.status(200).json(news);
         } catch (error) {
-            return res.status(500).json({ message: 'Error retrieving news', error });
+            return res.status(500).json({ message: 'Error al obtener noticias', error });
         }
     }
 
@@ -80,18 +101,18 @@ export class NewsController {
             const newsData = req.body;
 
             if (!id) {
-                return res.status(400).json({ message: 'Invalid news ID' });
+                return res.status(400).json({ message: 'ID de noticia inválido' });
             }
 
             const edited = await new NewsService().editNews(id, newsData);
 
             if (!edited) {
-                return res.status(404).json({ message: 'News not found' });
+                return res.status(404).json({ message: 'Noticia no encontrada' });
             }
 
-            return res.status(200).json({ message: 'News edited successfully', data: edited });
+            return res.status(200).json({ message: 'Noticia editada exitosamente', data: edited });
         } catch (error) {
-            return res.status(500).json({ message: 'Error editing news', error });
+            return res.status(500).json({ message: 'Error al editar noticia', error });
         }
     }
 
@@ -100,18 +121,18 @@ export class NewsController {
             const { id } = req.params;
             
             if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'Invalid news ID' });
+                return res.status(400).json({ message: 'ID de noticia inválido' });
             }
             
             const deletedNews = await new NewsService().deleteNews(id);
             
             if (!deletedNews) {
-                return res.status(404).json({ message: 'News not found' });
+                return res.status(404).json({ message: 'Noticia no encontrada' });
             }
             
-            return res.status(200).json({ message: 'News deleted successfully', data: deletedNews });
+            return res.status(200).json({ message: 'Noticia eliminada exitosamente', data: deletedNews });
         } catch (error) {
-            return res.status(500).json({ message: 'Error deleting news', error });
+            return res.status(500).json({ message: 'Error al eliminar noticia', error });
         }
     }
        
