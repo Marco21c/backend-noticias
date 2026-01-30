@@ -7,7 +7,7 @@ export class UserController {
 			const users = await new UserService().getAllUsers();
 			return res.status(200).json(users);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error retrieving users', error });
+			return res.status(500).json({ message: 'Error al obtener usuarios', error });
 		}
 	}
 
@@ -15,12 +15,22 @@ export class UserController {
 		try {
 			const userData = req.body;
 			if (!userData || typeof userData.password !== 'string' || !userData.email) {
-				return res.status(400).json({ message: 'Invalid user data' });
+				return res.status(400).json({ message: 'Datos de usuario inválidos' });
 			}
 			const newUser = await new UserService().createUser(userData);
-			return res.status(201).json({ message: 'User created successfully', data: newUser });
+			return res.status(201).json({ message: 'Usuario creado correctamente', data: newUser });
 		} catch (error) {
-			return res.status(500).json({ message: 'Error creating user', error });
+			const err: any = error;
+			if (err && err.message === 'EMAIL_DUPLICATE') {
+				return res.status(409).json({ message: 'El email ya existe' });
+			}
+			if (err && err.message === 'INVALID_EMAIL') {
+				return res.status(400).json({ message: 'Email inválido' });
+			}
+			if (err && err.message === 'INVALID_PASSWORD') {
+				return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });
+			}
+			return res.status(500).json({ message: 'Error al crear usuario', error });
 		}
 	}
 
@@ -28,13 +38,13 @@ export class UserController {
 		try {
 			const { id } = req.params;
 			if (!id || typeof id !== 'string') {
-				return res.status(400).json({ message: 'Invalid user ID' });
+				return res.status(400).json({ message: 'ID de usuario inválido' });
 			}
 			const user = await new UserService().getUserById(id);
-			if (!user) return res.status(404).json({ message: 'User not found' });
+			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 			return res.status(200).json(user);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error retrieving user', error });
+			return res.status(500).json({ message: 'Error al obtener usuario', error });
 		}
 	}
 
@@ -42,13 +52,13 @@ export class UserController {
 		try {
 			const email = req.query.email;
 			if (!email || typeof email !== 'string') {
-				return res.status(400).json({ message: 'Invalid email' });
+				return res.status(400).json({ message: 'Email inválido' });
 			}
 			const user = await new UserService().getUserByEmail(email);
-			if (!user) return res.status(404).json({ message: 'User not found' });
+			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 			return res.status(200).json(user);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error retrieving user', error });
+			return res.status(500).json({ message: 'Error al obtener usuario', error });
 		}
 	}
 
@@ -66,14 +76,21 @@ export class UserController {
 			}
 
 			const userData = req.body;
-			if (!id) return res.status(400).json({ message: 'Invalid user ID' });
+			if (!id) return res.status(400).json({ message: 'ID de usuario inválido' });
 
-			const edited = await new UserService().updateUser(id, userData);
-			if (!edited) return res.status(404).json({ message: 'User not found' });
+			try {
+				const edited = await new UserService().updateUser(id, userData);
+				if (!edited) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-			return res.status(200).json({ message: 'User edited successfully', data: edited });
+				return res.status(200).json({ message: 'Usuario editado correctamente', data: edited });
+			} catch (err: any) {
+				if (err && err.message === 'EMAIL_DUPLICATE') return res.status(409).json({ message: 'El email ya existe' });
+				if (err && err.message === 'INVALID_EMAIL') return res.status(400).json({ message: 'Email inválido' });
+				if (err && err.message === 'INVALID_PASSWORD') return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });
+				throw err;
+			}
 		} catch (error) {
-			return res.status(500).json({ message: 'Error editing user', error });
+			return res.status(500).json({ message: 'Error al editar usuario', error });
 		}
 	}
 
@@ -81,13 +98,13 @@ export class UserController {
 		try {
 			const { id } = req.params;
 			if (!id || typeof id !== 'string') {
-				return res.status(400).json({ message: 'Invalid user ID' });
+				return res.status(400).json({ message: 'ID de usuario inválido' });
 			}
 			const deletedUser = await new UserService().deleteUser(id);
-			if (!deletedUser) return res.status(404).json({ message: 'User not found' });
-			return res.status(200).json({ message: 'User deleted successfully', data: deletedUser });
+			if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
+			return res.status(200).json({ message: 'Usuario eliminado correctamente', data: deletedUser });
 		} catch (error) {
-			return res.status(500).json({ message: 'Error deleting user', error });
+			return res.status(500).json({ message: 'Error al eliminar usuario', error });
 		}
 	}
 }
