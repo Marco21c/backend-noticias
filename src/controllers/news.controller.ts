@@ -16,7 +16,14 @@ export class NewsController {
     async createNews(req: Request, res: Response): Promise<Response> {
         try {
             const newsData = req.body;
-            const newNews = await new NewsService().createNews(newsData);
+            const user = (req as any).user;
+            
+            if (!user || !user._id) {
+                return res.status(401).json({ message: 'User not authenticated' });
+            }
+            
+            // Pasar explícitamente el authorId al service
+            const newNews = await new NewsService().createNews(newsData, user._id);
             return res.status(201).json({ message: 'News created successfully', data: newNews });
         } catch (error) {
             return res.status(500).json({ message: 'Error creating news', error });

@@ -1,6 +1,7 @@
 
 import type { INews } from '../interfaces/news.interface.js';
 import NewsModel from '../models/news.model.js';
+import { Types } from 'mongoose';
 
 export class NewsService {
 
@@ -8,8 +9,16 @@ export class NewsService {
         return NewsModel.find();
     }
 
-    async createNews(newsData: INews): Promise<INews> {
-        const newNews = new NewsModel(newsData);
+    async createNews(
+        newsData: Omit<INews, 'author' | 'status' | 'publicationDate'>,
+        authorId: Types.ObjectId
+    ): Promise<INews> {
+        const newNews = new NewsModel({
+            ...newsData,
+            author: authorId,
+            status: 'draft',
+            publicationDate: null
+        });
         return newNews.save();
     }
 
