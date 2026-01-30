@@ -6,7 +6,21 @@ export class NewsController {
 
     async getNews(req: Request, res: Response): Promise<Response> {
         try {
-            const news = await new NewsService().getAllNews();
+            const { status, author } = req.query;
+            const filters: { status?: string; author?: string } = {};
+            
+            if (status && typeof status === 'string') {
+                filters.status = status;
+            }
+            
+            if (author && typeof author === 'string') {
+                filters.author = author;
+            }
+            
+            const news = await new NewsService().getAllNews(
+                Object.keys(filters).length > 0 ? filters : undefined
+            );
+            
             return res.status(200).json(news);
         } catch (error) {
             return res.status(500).json({ message: 'Error retrieving news', error });

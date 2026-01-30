@@ -5,8 +5,23 @@ import { Types } from 'mongoose';
 
 export class NewsService {
 
-    async getAllNews(): Promise<INews[]> {
-        return NewsModel.find();
+    async getAllNews(filters?: { status?: string; author?: string }): Promise<INews[]> {
+        const query: any = {};
+        
+        if (filters?.status) {
+            query.status = filters.status;
+        }
+        
+        if (filters?.author) {
+            try {
+                query.author = new Types.ObjectId(filters.author);
+            } catch {
+                // Si no es un ObjectId válido, devolver array vacío
+                return [];
+            }
+        }
+        
+        return NewsModel.find(query).exec();
     }
 
     async createNews(
