@@ -150,28 +150,96 @@ backend-noticias/
 │   │   ├── database.ts      # Conexión a MongoDB
 │   │   └── env.ts           # Validación de variables de entorno
 │   ├── controllers/
-│   │   └── news.controller.ts  # Controladores de noticias
+│   │   ├── auth.controller.ts    # Controladores de autenticación
+│   │   ├── news.controller.ts    # Controladores de noticias
+│   │   └── user.controller.ts    # Controladores de usuarios
 │   ├── interfaces/
-│   │   └── news.interface.ts   # Interfaces TypeScript
+│   │   ├── login.interface.ts    # Interfaz de login
+│   │   ├── news.interface.ts     # Interfaces de noticias
+│   │   └── user.interface.ts     # Interfaces de usuarios
+│   ├── middlewares/
+│   │   └── auth.middleware.ts    # Middleware de autenticación
 │   ├── models/
-│   │   └── news.model.ts       # Modelo Mongoose
+│   │   ├── news.model.ts         # Modelo Mongoose de noticias
+│   │   └── user.model.ts         # Modelo Mongoose de usuarios
 │   ├── routes/
-│   │   ├── main.routes.ts      # Rutas principales
-│   │   └── news.route.ts       # Rutas de noticias
+│   │   ├── auth.route.ts         # Rutas de autenticación
+│   │   ├── main.routes.ts        # Rutas principales
+│   │   ├── news.route.ts         # Rutas de noticias
+│   │   └── user.route.ts         # Rutas de usuarios
 │   └── services/
-│       └── news.services.ts    # Lógica de negocio
-├── dist/                      # Código compilado (generado)
-├── index.ts                   # Punto de entrada
+│       ├── auth.services.ts      # Servicios de autenticación
+│       ├── news.services.ts      # Servicios de noticias
+│       └── user.services.ts      # Servicios de usuarios
+├── dist/                        # Código compilado (generado)
+├── index.ts                     # Punto de entrada
+├── .env                         # Variables de entorno (no incluir en git)
 ├── package.json
 ├── tsconfig.json
 └── tsconfig.build.json
 ```
 
-## 🔌 Endpoints de la API
+## � Modelo de Datos
 
-Todos los endpoints están bajo el prefijo `/api/news`.
+### Modelo de Noticia
 
-### Obtener todas las noticias
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `_id` | ObjectId | Auto | Identificador único de MongoDB |
+| `title` | String | ✅ | Título de la noticia |
+| `slug` | String | ✅ | URL amigable (único) |
+| `summary` | String | ✅ | Resumen breve |
+| `content` | String | ✅ | Contenido completo |
+| `highlights` | String[] | ❌ | Array de puntos destacados |
+| `author` | ObjectId | ✅ | Referencia al usuario (ID) |
+| `category` | Enum | ✅ | Categoría: `politic`, `economy`, `sports`, `technology`, `health`, `entertainment`, `science`, `world`, `local`, `education`, `travel`, `lifestyle`, `international` |
+| `variant` | Enum | ✅ | Tipo: `highlighted`, `featured`, `default` |
+| `status` | Enum | ❌ | Estado: `draft`, `in_review`, `approved`, `published`, `rejected` |
+| `mainImage` | String | ❌ | URL de imagen principal |
+| `source` | String | ❌ | Fuente de la noticia |
+| `publicationDate` | Date | ❌ | Fecha de publicación (default: ahora) |
+| `createdAt` | Date | Auto | Fecha de creación |
+| `updatedAt` | Date | Auto | Fecha de actualización |
+
+### Modelo de Usuario
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `_id` | ObjectId | Auto | Identificador único de MongoDB |
+| `email` | String | ✅ | Email único en minúsculas |
+| `password` | String | ✅ | Contraseña hasheada |
+| `role` | Enum | ✅ | Rol: `admin`, `editor`, `user` |
+| `name` | String | ❌ | Nombre del usuario |
+| `lastName` | String | ❌ | Apellido del usuario |
+| `createdAt` | Date | Auto | Fecha de creación |
+| `updatedAt` | Date | Auto | Fecha de actualización |
+
+---
+
+## �🔌 Endpoints de la API
+
+### Endpoints de Autenticación
+
+#### Login
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+**Body (ejemplo):**
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "password": "contraseña"
+}
+```
+
+---
+
+### Endpoints de Noticias
+
+#### Obtener todas las noticias (público)
 
 ```http
 GET /api/news
@@ -187,10 +255,12 @@ GET /api/news
     "summary": "Resumen de la noticia",
     "content": "Contenido completo...",
     "highlights": ["punto 1", "punto 2"],
-    "author": "Nombre del autor",
+    "author": "64f...",
     "category": "technology",
     "variant": "default",
     "status": "published",
+    "mainImage": "https://ejemplo.com/imagen.jpg",
+    "source": "Fuente de la noticia",
     "publicationDate": "2024-01-15T10:00:00.000Z",
     "createdAt": "2024-01-15T10:00:00.000Z",
     "updatedAt": "2024-01-15T10:00:00.000Z"
@@ -198,13 +268,13 @@ GET /api/news
 ]
 ```
 
-### Obtener noticia por ID
+#### Obtener noticia por ID (público)
 
 ```http
 GET /api/news/:id
 ```
 
-### Obtener noticias por categoría
+#### Obtener noticias por categoría (público)
 
 ```http
 GET /api/news/category?category=technology
@@ -213,11 +283,12 @@ GET /api/news/category?category=technology
 **Categorías disponibles:**
 - `politic`, `economy`, `sports`, `technology`, `health`, `entertainment`, `science`, `world`, `local`, `education`, `travel`, `lifestyle`, `international`
 
-### Crear una noticia
+#### Crear una noticia (autenticado - editor/admin)
 
 ```http
 POST /api/news
 Content-Type: application/json
+Authorization: Bearer <token>
 ```
 
 **Body (ejemplo):**
@@ -228,68 +299,198 @@ Content-Type: application/json
   "summary": "Resumen de la noticia",
   "content": "Contenido completo de la noticia...",
   "highlights": ["Punto destacado 1", "Punto destacado 2"],
-  "author": "Juan Pérez",
+  "author": "64f...",
   "category": "technology",
   "variant": "default",
-  "status": "published",
+  "status": "draft",
   "mainImage": "https://ejemplo.com/imagen.jpg",
   "source": "Fuente de la noticia"
 }
 ```
 
-### Actualizar una noticia
+#### Actualizar una noticia (autenticado - editor/admin)
 
 ```http
-PUT /api/news?_id=64f...
+PUT /api/news
 Content-Type: application/json
+Authorization: Bearer <token>
 ```
 
 **Body (ejemplo):**
 ```json
 {
+  "_id": "64f...",
   "title": "Título actualizado",
   "summary": "Resumen actualizado",
   "status": "published"
 }
 ```
 
-**Nota**: El `_id` puede enviarse como query parameter (`?_id=...`) o en el body.
-
-### Eliminar una noticia
+#### Eliminar una noticia (autenticado - editor/admin)
 
 ```http
 DELETE /api/news/:id
+Authorization: Bearer <token>
 ```
 
-## 📊 Modelo de Datos
+---
+### Filtros de Noticias
 
-### Campos de la Noticia
+Los endpoints de noticias soportan los siguientes filtros como query parameters:
 
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| `title` | String | ✅ | Título de la noticia |
-| `slug` | String | ✅ | URL amigable (único) |
-| `summary` | String | ✅ | Resumen breve |
-| `content` | String | ✅ | Contenido completo |
-| `highlights` | String[] | ❌ | Array de puntos destacados |
-| `author` | String | ✅ | Nombre del autor |
-| `category` | Enum | ✅ | Categoría de la noticia |
-| `variant` | Enum | ✅ | Variante (highlighted, featured, default) |
-| `status` | Enum | ❌ | Estado (draft, published) |
-| `mainImage` | String | ❌ | URL de imagen principal |
-| `source` | String | ❌ | Fuente de la noticia |
-| `publicationDate` | Date | ❌ | Fecha de publicación (default: ahora) |
-| `createdAt` | Date | Auto | Fecha de creación |
-| `updatedAt` | Date | Auto | Fecha de actualización |
+- **`status`**: Filtra noticias por estado (`draft`, `in_review`, `approved`, `published`, `rejected`)
+  ```http
+  GET /api/news?status=published
+  ```
+
+- **`author`**: Filtra noticias por ID del autor (ObjectId)
+  ```http
+  GET /api/news?author=64f...
+  ```
+
+- **Combinados**: Puedes usar ambos filtros juntos
+  ```http
+  GET /api/news?status=published&author=64f...
+  ```
+
+- **`category`**: Filtra por categoría (endpoint dedicado)
+  ```http
+  GET /api/news/category?category=technology
+  ```
+
+### Endpoints de Usuarios
+
+#### Obtener todos los usuarios
+
+```http
+GET /api/users
+```
+
+#### Obtener usuario por ID
+
+```http
+GET /api/users/:id
+```
+
+#### Crear un usuario
+
+```http
+POST /api/users
+Content-Type: application/json
+```
+
+**Body (ejemplo):**
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "password": "contraseña_segura",
+  "name": "Juan",
+  "lastName": "Pérez",
+  "role": "user"
+}
+```
+
+#### Actualizar usuario
+
+```http
+PUT /api/users/:id
+Content-Type: application/json
+```
+
+**Body (ejemplo):**
+```json
+{
+  "name": "Juan",
+  "lastName": "García",
+  "role": "editor"
+}
+```
+
+#### Eliminar usuario
+
+```http
+DELETE /api/users/:id
+```
+
+
+
+---
+
+## ✅ Características Implementadas
+
+### 🔐 Autenticación y Autorización (JWT)
+
+Se ha implementado un sistema completo de autenticación basado en JWT con protección de endpoints.
+
+**Componentes implementados:**
+
+- **AuthService** ([src/services/auth.services.ts](src/services/auth.services.ts)): Maneja la lógica de autenticación
+  - Generación y verificación de tokens JWT
+  - Validación de credenciales de usuario
+  - Recuperación de información del usuario desde el token
+
+- **Middleware de Autenticación** (`authenticate`) en [src/middlewares/auth.middleware.ts](src/middlewares/auth.middleware.ts):
+  - Extrae el token del header `Authorization: Bearer <token>`
+  - Verifica la validez del token
+  - Maneja errores de tokens expirados o inválidos
+  - Inyecta la información del usuario en la request
+
+- **Middleware de Autorización** (`requireRole`) en [src/middlewares/auth.middleware.ts](src/middlewares/auth.middleware.ts):
+  - Valida que el usuario tenga los roles requeridos (`admin`, `editor`, `user`)
+  - Se aplica a endpoints protegidos (crear, editar, eliminar noticias)
+  - Retorna error 403 si el usuario no tiene permisos suficientes
+
+**Ejemplo de uso en rutas:**
+```typescript
+// Crear noticia: requiere estar autenticado y tener rol editor o admin
+router.post('/', authenticate, requireRole('editor', 'admin'), newsController.createNews);
+
+// Eliminar noticia: requiere estar autenticado y tener rol editor o admin
+router.delete('/:id', authenticate, requireRole('editor', 'admin'), newsController.deleteNews);
+```
+
+---
+
+### ✔️ Validación de Entrada con Middleware
+
+Se implementó validación robusta de entrada en toda la aplicación:
+
+**Validación de Variables de Entorno** ([src/config/env.ts](src/config/env.ts)) con Zod:
+- Valida todas las variables de entorno al iniciar la aplicación
+- Proporciona mensajes de error específicos y claros
+- Asegura que las variables requeridas estén presentes según el entorno
+- Tipos y valores por defecto para cada variable
+
+**Validación en Controllers** ([src/controllers/](src/controllers/)):
+- Verificación de parámetros (IDs válidos)
+- Validación de tipos de query parameters
+- Manejo de errores y respuestas consistentes
+- Validación de datos en el body de requests
+
+**Ejemplos en endpoints:**
+- `getNewsById`: Valida que el ID sea una cadena válida
+- `getNewsByCategory`: Valida que la categoría sea válida
+- `createNews`: Valida que el usuario esté autenticado
+- Filtros de noticias: Convierte y valida tipos de datos
+
+**Ventajas implementadas:**
+- Previene errores por datos malformados
+- Proporciona respuestas de error claras al cliente
+- Protege la aplicación de datos inesperados
+- Facilita debugging y logging
+
+---
 
 ## 🔧 Configuración Avanzada
 
 ### Variables de Entorno por Entorno
 
-El sistema valida automáticamente las variables según el entorno:
+El sistema valida automáticamente las variables según el entorno (usando Zod):
 
 - **Desarrollo**: Requiere `MONGODB_DEV`
 - **Producción**: Requiere `MONGODB_URI`
+- **Puertos**: `PORT`, `PORT_DEV`, `PORT_PROD` (default: 3000)
+- **JWT**: `JWT_SECRET` (mínimo 32 caracteres), `JWT_EXPIRES_IN` (default: 7d)
 
 ### CORS
 
@@ -298,17 +499,45 @@ La configuración de CORS permite:
 - En desarrollo, permite todos los orígenes
 - Credenciales habilitadas
 - Métodos: GET, POST, PUT, DELETE
+- Headers permitidos: `Content-Type`, `Authorization`
+- Solicitudes sin origen (Postman, curl) son permitidas
+
+
+### Filtros de Noticias
+
+Los endpoints de noticias soportan los siguientes filtros como query parameters:
+
+- **`status`**: Filtra noticias por estado (`draft`, `in_review`, `approved`, `published`, `rejected`)
+  ```http
+  GET /api/news?status=published
+  ```
+
+- **`author`**: Filtra noticias por ID del autor (ObjectId)
+  ```http
+  GET /api/news?author=64f...
+  ```
+
+- **Combinados**: Puedes usar ambos filtros juntos
+  ```http
+  GET /api/news?status=published&author=64f...
+  ```
+
+- **`category`**: Filtra por categoría (endpoint dedicado)
+  ```http
+  GET /api/news/category?category=technology
+  ```
+
+---
 
 ## 🧪 Próximos Pasos Sugeridos
-
-- [ ] Añadir autenticación y autorización (JWT)
-- [ ] Implementar validación de entrada con middleware
 - [ ] Añadir tests unitarios y de integración
 - [ ] Implementar paginación en los endpoints GET
-- [ ] Añadir búsqueda y filtros avanzados
+- [ ] Añadir búsqueda de noticias avanzada
 - [ ] Implementar subida de imágenes
 - [ ] Añadir logging estructurado
 - [ ] Documentación con Swagger/OpenAPI
+- [ ] Rate limiting para endpoints
+- [ ] Caché de respuestas
 
 ## 📝 Licencia
 

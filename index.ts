@@ -5,13 +5,16 @@ import './src/config/database.js';
 import mainRouter from './src/routes/main.routes.js';
 import env from './src/config/env.js';
 
+
 const app = express();
 const PORT = process.env.NODE_ENV === 'production' ? (env.PORT_PROD || env.PORT) : (env.PORT_DEV || env.PORT);
 
 // Middlewares
 app.use(express.json());
 app.use(cors(corsOptions));
-app.use('/api', mainRouter);
+
+// Routes
+app.use('/api', mainRouter); 
 
 
 // Inicio del servidor

@@ -8,7 +8,7 @@ const NewsSchema: Schema = new Schema(
     summary: { type: String, required: true },
     content: { type: String, required: true },
     highlights: { type: [String], default: [] },
-    author: { type: String, required: true },
+    author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     category: { type: String, 
       enum: ['politic', 'economy', 'sports', 'technology', 'health', 'entertainment', 'science', 'world', 'local','education', 'travel', 'lifestyle','international'],
       default: 'politic',
@@ -22,7 +22,7 @@ const NewsSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'published'],
+      enum: ['draft', 'in_review', 'approved', 'published', 'rejected'],
       default: 'draft'
     },
     publicationDate: { type: Date, default: Date.now }
