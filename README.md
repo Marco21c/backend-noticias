@@ -150,18 +150,30 @@ backend-noticias/
 │   │   ├── database.ts      # Conexión a MongoDB
 │   │   └── env.ts           # Validación de variables de entorno
 │   ├── controllers/
-│   │   └── news.controller.ts  # Controladores de noticias
+│   │   ├── auth.controller.ts    # Controladores de autenticación
+│   │   ├── news.controller.ts    # Controladores de noticias
+│   │   └── user.controller.ts    # Controladores de usuarios
 │   ├── interfaces/
-│   │   └── news.interface.ts   # Interfaces TypeScript
+│   │   ├── login.interface.ts    # Interfaz de login
+│   │   ├── news.interface.ts     # Interfaces de noticias
+│   │   └── user.interface.ts     # Interfaces de usuarios
+│   ├── middlewares/
+│   │   └── auth.middleware.ts    # Middleware de autenticación
 │   ├── models/
-│   │   └── news.model.ts       # Modelo Mongoose
+│   │   ├── news.model.ts         # Modelo Mongoose de noticias
+│   │   └── user.model.ts         # Modelo Mongoose de usuarios
 │   ├── routes/
-│   │   ├── main.routes.ts      # Rutas principales
-│   │   └── news.route.ts       # Rutas de noticias
+│   │   ├── auth.route.ts         # Rutas de autenticación
+│   │   ├── main.routes.ts        # Rutas principales
+│   │   ├── news.route.ts         # Rutas de noticias
+│   │   └── user.route.ts         # Rutas de usuarios
 │   └── services/
-│       └── news.services.ts    # Lógica de negocio
-├── dist/                      # Código compilado (generado)
-├── index.ts                   # Punto de entrada
+│       ├── auth.services.ts      # Servicios de autenticación
+│       ├── news.services.ts      # Servicios de noticias
+│       └── user.services.ts      # Servicios de usuarios
+├── dist/                        # Código compilado (generado)
+├── index.ts                     # Punto de entrada
+├── .env                         # Variables de entorno (no incluir en git)
 ├── package.json
 ├── tsconfig.json
 └── tsconfig.build.json
