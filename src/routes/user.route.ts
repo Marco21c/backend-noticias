@@ -3,6 +3,8 @@ import { userController } from '../controllers/user.controller.js';
 
 const userRouter = Router();
 
+console.log('Ruta cargada');
+
 userRouter.get('/', userController.getUsers);
 userRouter.post('/', userController.createUser);
 // This function will be activated when needed; for now, it is not.
