@@ -1,40 +1,30 @@
-# 📰 Backend Noticias
+# Backend - Sistema de Gestión de Noticias
 
-API REST desarrollada con Node.js, TypeScript, Express y MongoDB para la gestión completa de noticias. Proporciona endpoints para crear, leer, actualizar y eliminar noticias, con soporte para filtrado por categoría y gestión de estados de publicación.
+API REST desarrollada con Node.js, TypeScript, Express y MongoDB para la gestión completa de noticias con sistema de autenticación, autorización basada en roles y administración de usuarios.
 
-## 📋 Descripción
+## Descripción
 
-Este proyecto es el backend de una aplicación de gestión de noticias que permite:
+Backend robusto para sistema de gestión de noticias que proporciona autenticación JWT, control de acceso basado en roles (Superadmin, Admin, Editor, User), CRUD completo de noticias y usuarios, con arquitectura escalable y segura.
 
-- **CRUD completo** de noticias (Crear, Leer, Actualizar, Eliminar)
-- **Filtrado por categoría** para organizar contenido
-- **Gestión de estados** (borrador/publicado)
-- **Variantes de noticias** (destacadas, destacadas principales, por defecto)
-- **Validación de variables de entorno** con Zod
-- **Configuración de CORS** para desarrollo y producción
-- **Arquitectura escalable** con separación de responsabilidades (controllers, services, models)
+### Características principales
 
-## ✨ Características
+- Sistema de autenticación con JWT
+- Control de acceso basado en roles
+- Gestión de usuarios con encriptación de contraseñas (bcrypt)
+- Sistema de inicialización de Superadmin
+- CRUD completo de noticias y usuarios
+- Filtrado por categoría, autor y estado
+- Validación de variables de entorno con Zod
+- Arquitectura modular (MVC pattern)
+- Configuración de CORS para múltiples entornos
 
-- 🚀 **TypeScript** para tipado estático y mejor desarrollo
-- 🔒 **Validación de entorno** con Zod
-- 🗄️ **MongoDB** con Mongoose para persistencia de datos
-- 🌐 **Express.js** para el servidor HTTP
-- 🔄 **CORS configurado** para múltiples entornos
-- 📦 **Arquitectura modular** (MVC pattern)
-- ⚡ **Hot reload** en desarrollo con `tsx watch`
+## Requisitos Previos
 
-## 🛠️ Requisitos Previos
+- Node.js >= 18.x
+- npm o yarn
+- MongoDB (local o remoto)
 
-Antes de comenzar, asegúrate de tener instalado:
-
-- **Node.js** >= 16.x (recomendado 18.x o superior)
-- **npm** o **yarn** como gestor de paquetes
-- **MongoDB** (local o remoto)
-  - Local: MongoDB Community Server
-  - Remoto: MongoDB Atlas o cualquier instancia de MongoDB
-
-## 📦 Instalación
+## Instalación
 
 ### 1. Clonar el repositorio
 
@@ -51,7 +41,7 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
+Crear un archivo `.env` en la raíz del proyecto:
 
 ```env
 # Entorno
@@ -63,207 +53,203 @@ PORT_DEV=3000
 PORT_PROD=3000
 
 # Base de datos
-# Para desarrollo (obligatorio si NODE_ENV=development)
 MONGODB_DEV=mongodb://localhost:27017/noticiasdb
-# Para producción (obligatorio si NODE_ENV=production)
 MONGODB_URI=mongodb://usuario:password@host:puerto/noticiasdb
 
-# URLs del cliente (opcionales, para CORS)
+# URLs del cliente (CORS)
 CLIENT_URL=http://localhost:5173
 CLIENT_DEV_URL=http://localhost:5173
 APP_URL=http://localhost:3000
 
-# JWT (opcional, para futuras funcionalidades)
+# JWT
 JWT_SECRET=tu_secreto_jwt_minimo_32_caracteres_aqui
 JWT_EXPIRES_IN=7d
 ```
 
-**Nota**: Si usas MongoDB local en el puerto por defecto (27017), puedes usar:
-```env
-MONGODB_DEV=mongodb://localhost:27017/noticiasdb
-```
+### 4. Inicializar Superadmin
 
-### 4. Verificar la conexión a MongoDB
-
-Asegúrate de que MongoDB esté corriendo:
+Crear el usuario superadmin inicial:
 
 ```bash
-# En Windows (si MongoDB está instalado como servicio, debería iniciarse automáticamente)
-# Verifica con:
-mongosh
-
-# En Linux/Mac
-sudo systemctl start mongod
-# o
-brew services start mongodb-community
+npm run create-superadmin
 ```
 
-## 🚀 Uso
+## Uso
+
+### Comandos disponibles
+
+- `npm run dev` - Inicia el servidor en modo desarrollo con hot reload
+- `npm run build` - Compila el proyecto TypeScript
+- `npm start` - Inicia el servidor en producción
+- `npm run create-superadmin` - Crea usuario superadmin
+- `npm run delete-superadmin` - Elimina usuario superadmin
+- `npm run type-check` - Verifica tipos TypeScript
 
 ### Modo Desarrollo
-
-Inicia el servidor en modo desarrollo con hot reload:
 
 ```bash
 npm run dev
 ```
 
-El servidor se iniciará en `http://localhost:3000` (o el puerto configurado en `PORT_DEV`).
+El servidor se iniciará en `http://localhost:3000`.
 
 ### Modo Producción
 
-1. Compilar el proyecto:
-
 ```bash
 npm run build
-```
-
-2. Iniciar el servidor:
-
-```bash
-npm start:prod
-```
-
-O simplemente:
-
-```bash
 npm start
 ```
 
-### Otros Scripts Disponibles
-
-```bash
-# Verificar tipos TypeScript sin compilar
-npm run type-check
-
-# Iniciar en modo desarrollo con variables de entorno explícitas
-npm run start:dev
-```
-
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 backend-noticias/
 ├── src/
-│   ├── config/
-│   │   ├── cors.ts          # Configuración de CORS
-│   │   ├── database.ts      # Conexión a MongoDB
-│   │   └── env.ts           # Validación de variables de entorno
-│   ├── controllers/
-│   │   └── news.controller.ts  # Controladores de noticias
-│   ├── interfaces/
-│   │   └── news.interface.ts   # Interfaces TypeScript
-│   ├── models/
-│   │   └── news.model.ts       # Modelo Mongoose
-│   ├── routes/
-│   │   ├── main.routes.ts      # Rutas principales
-│   │   └── news.route.ts       # Rutas de noticias
-│   └── services/
-│       └── news.services.ts    # Lógica de negocio
-├── dist/                      # Código compilado (generado)
-├── index.ts                   # Punto de entrada
-├── package.json
-├── tsconfig.json
-└── tsconfig.build.json
+│   ├── config/          # Configuraciones
+│   │   ├── cors.ts      # Configuración CORS
+│   │   ├── database.ts  # Conexión MongoDB
+│   │   └── env.ts       # Validación de entorno
+│   ├── controllers/     # Controladores
+│   │   ├── auth.controller.ts
+│   │   ├── news.controller.ts
+│   │   └── users.controller.ts
+│   ├── interfaces/      # Interfaces TypeScript
+│   ├── middlewares/     # Middlewares
+│   │   └── auth.middleware.ts
+│   ├── models/          # Modelos Mongoose
+│   │   ├── news.model.ts
+│   │   └── user.model.ts
+│   ├── routes/          # Rutas de la API
+│   ├── scripts/         # Scripts de utilidad
+│   │   ├── createSuperAdmin.ts
+│   │   └── deleteSuperAdmin.ts
+│   └── services/        # Lógica de negocio
+├── dist/                # Código compilado
+└── index.ts             # Punto de entrada
 ```
 
-## 🔌 Endpoints de la API
+## Endpoints de la API
 
-Todos los endpoints están bajo el prefijo `/api/news`.
+### Autenticación
 
-### Obtener todas las noticias
+#### Login
+```http
+POST /api/auth/login
+Content-Type: application/json
 
+{
+  "email": "usuario@example.com",
+  "password": "contraseña"
+}
+```
+
+#### Registro
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "contraseña",
+  "name": "Nombre",
+  "lastName": "Apellido"
+}
+```
+
+### Noticias
+
+#### Obtener todas las noticias
 ```http
 GET /api/news
+GET /api/news?category=technology
+GET /api/news?author=authorId
+GET /api/news?status=published
 ```
 
-**Respuesta exitosa (200):**
-```json
-[
-  {
-    "_id": "...",
-    "title": "Título de la noticia",
-    "slug": "titulo-de-la-noticia",
-    "summary": "Resumen de la noticia",
-    "content": "Contenido completo...",
-    "highlights": ["punto 1", "punto 2"],
-    "author": "Nombre del autor",
-    "category": "technology",
-    "variant": "default",
-    "status": "published",
-    "publicationDate": "2024-01-15T10:00:00.000Z",
-    "createdAt": "2024-01-15T10:00:00.000Z",
-    "updatedAt": "2024-01-15T10:00:00.000Z"
-  }
-]
-```
-
-### Obtener noticia por ID
-
+#### Obtener noticia por ID
 ```http
 GET /api/news/:id
 ```
 
-### Obtener noticias por categoría
-
-```http
-GET /api/news/category?category=technology
-```
-
-**Categorías disponibles:**
-- `politic`, `economy`, `sports`, `technology`, `health`, `entertainment`, `science`, `world`, `local`, `education`, `travel`, `lifestyle`, `international`
-
-### Crear una noticia
-
+#### Crear noticia (requiere autenticación)
 ```http
 POST /api/news
+Authorization: Bearer <token>
 Content-Type: application/json
-```
 
-**Body (ejemplo):**
-```json
 {
-  "title": "Nueva noticia tecnológica",
-  "slug": "nueva-noticia-tecnologica",
-  "summary": "Resumen de la noticia",
-  "content": "Contenido completo de la noticia...",
-  "highlights": ["Punto destacado 1", "Punto destacado 2"],
-  "author": "Juan Pérez",
+  "title": "Título de la noticia",
+  "slug": "titulo-de-la-noticia",
+  "summary": "Resumen",
+  "content": "Contenido completo",
   "category": "technology",
   "variant": "default",
-  "status": "published",
-  "mainImage": "https://ejemplo.com/imagen.jpg",
-  "source": "Fuente de la noticia"
-}
-```
-
-### Actualizar una noticia
-
-```http
-PUT /api/news?_id=64f...
-Content-Type: application/json
-```
-
-**Body (ejemplo):**
-```json
-{
-  "title": "Título actualizado",
-  "summary": "Resumen actualizado",
   "status": "published"
 }
 ```
 
-**Nota**: El `_id` puede enviarse como query parameter (`?_id=...`) o en el body.
-
-### Eliminar una noticia
-
+#### Actualizar noticia (requiere autenticación)
 ```http
-DELETE /api/news/:id
+PUT /api/news?_id=<newsId>
+Authorization: Bearer <token>
 ```
 
-## 📊 Modelo de Datos
+#### Eliminar noticia (requiere autenticación)
+```http
+DELETE /api/news/:id
+Authorization: Bearer <token>
+```
 
-### Campos de la Noticia
+### Usuarios (solo Superadmin)
+
+#### Obtener todos los usuarios
+```http
+GET /api/users
+Authorization: Bearer <token>
+```
+
+#### Crear usuario
+```http
+POST /api/users
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "password": "contraseña",
+  "name": "Nombre",
+  "lastName": "Apellido",
+  "role": "admin"
+}
+```
+
+#### Actualizar usuario
+```http
+PUT /api/users/:id
+Authorization: Bearer <token>
+```
+
+#### Eliminar usuario
+```http
+DELETE /api/users/:id
+Authorization: Bearer <token>
+```
+
+## Modelo de Datos
+
+### Usuario
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `email` | String | ✅ | Email único |
+| `password` | String | ✅ | Contraseña encriptada |
+| `name` | String | ✅ | Nombre |
+| `lastName` | String | ✅ | Apellido |
+| `role` | Enum | ✅ | superadmin, admin, editor, user |
+| `createdAt` | Date | Auto | Fecha de creación |
+| `updatedAt` | Date | Auto | Fecha de actualización |
+
+### Noticia
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
@@ -271,71 +257,80 @@ DELETE /api/news/:id
 | `slug` | String | ✅ | URL amigable (único) |
 | `summary` | String | ✅ | Resumen breve |
 | `content` | String | ✅ | Contenido completo |
-| `highlights` | String[] | ❌ | Array de puntos destacados |
-| `author` | String | ✅ | Nombre del autor |
-| `category` | Enum | ✅ | Categoría de la noticia |
-| `variant` | Enum | ✅ | Variante (highlighted, featured, default) |
-| `status` | Enum | ❌ | Estado (draft, published) |
-| `mainImage` | String | ❌ | URL de imagen principal |
-| `source` | String | ❌ | Fuente de la noticia |
-| `publicationDate` | Date | ❌ | Fecha de publicación (default: ahora) |
-| `createdAt` | Date | Auto | Fecha de creación |
-| `updatedAt` | Date | Auto | Fecha de actualización |
+| `highlights` | String[] | ❌ | Puntos destacados |
+| `author` | ObjectId | Auto | Referencia al usuario |
+| `category` | Enum | ✅ | Categoría |
+| `variant` | Enum | ✅ | highlighted, featured, default |
+| `status` | Enum | ❌ | draft, published |
+| `mainImage` | String | ❌ | URL de imagen |
+| `source` | String | ❌ | Fuente |
+| `publicationDate` | Date | ❌ | Fecha de publicación |
 
-## 🔧 Configuración Avanzada
+## Roles de Usuario
 
-### Variables de Entorno por Entorno
+El sistema implementa cuatro niveles de acceso:
 
-El sistema valida automáticamente las variables según el entorno:
+- **Superadmin**: Acceso completo, incluyendo gestión de usuarios
+- **Admin**: Gestión completa de noticias
+- **Editor**: Creación y edición de noticias
+- **User**: Solo lectura
 
-- **Desarrollo**: Requiere `MONGODB_DEV`
-- **Producción**: Requiere `MONGODB_URI`
+## Seguridad
 
-### CORS
+- Contraseñas encriptadas con bcrypt
+- Autenticación mediante JWT
+- Tokens con expiración configurable
+- Middleware de autenticación para rutas protegidas
+- Validación de roles para endpoints sensibles
+- CORS configurado para orígenes específicos
 
-La configuración de CORS permite:
-- Orígenes definidos en `CLIENT_URL`, `CLIENT_DEV_URL`, `APP_URL`
-- En desarrollo, permite todos los orígenes
-- Credenciales habilitadas
-- Métodos: GET, POST, PUT, DELETE
+## Tecnologías Utilizadas
 
-## 🧪 Próximos Pasos Sugeridos
+### Core
+- Node.js
+- TypeScript ^5.9.3
+- Express ^5.2.1
 
-- [ ] Añadir autenticación y autorización (JWT)
-- [ ] Implementar validación de entrada con middleware
-- [ ] Añadir tests unitarios y de integración
-- [ ] Implementar paginación en los endpoints GET
-- [ ] Añadir búsqueda y filtros avanzados
-- [ ] Implementar subida de imágenes
-- [ ] Añadir logging estructurado
-- [ ] Documentación con Swagger/OpenAPI
+### Base de Datos
+- MongoDB
+- Mongoose ^9.1.3
 
-## 📝 Licencia
+### Autenticación y Seguridad
+- jsonwebtoken ^9.0.3
+- bcryptjs ^3.0.3
 
-Este proyecto está licenciado bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+### Validación y Configuración
+- Zod ^4.3.5
+- dotenv ^17.2.3
+- cors ^2.8.5
 
-## 👥 Autores
+### Desarrollo
+- tsx ^4.21.0
+- cross-env ^7.0.3
 
-Este proyecto es desarrollado por un equipo de **4 desarrolladores**:
+## Gestión del Proyecto
 
-| Nombre | GitHub | LinkedIn |
-|--------|--------|----------|
-| **Andres Chaile** | [@andres777c](https://github.com/andres777c) | [LinkedIn](https://linkedin.com/in/usuario) |
-| **Marcos Condori** | [@Marco21c](https://github.com/Marco21c) | [LinkedIn](https://www.linkedin.com/in/marcos-condori-23c/) |
-| **Leonardo Alcedo** | [@leo99902](https://github.com/leo99902) | [LinkedIn](https://www.linkedin.com/in/leonardo-alcedo-006189363/) |
-| **Ezequiel Pacheco** | [@EzePacheco](https://github.com/EzePacheco) | [LinkedIn](https://www.linkedin.com/in/ezepacheco-dev/) |
+Este proyecto se gestiona mediante **GitHub Projects**, donde se organizan los sprints, tareas y el seguimiento del desarrollo. La metodología ágil permite una planificación iterativa y una mejor colaboración entre los miembros del equipo.
 
-## 🐛 Reportar Problemas
+### Organización
 
-Si encuentras algún problema o tienes sugerencias, por favor abre un [issue](https://github.com/Marco21c/backend-noticias/issues) en el repositorio.
+- **Sprints**: Ciclos de desarrollo de 2 semanas
+- **Tareas**: Organizadas en el tablero de GitHub Projects
+- **Issues**: Seguimiento de bugs y nuevas funcionalidades
+- **Pull Requests**: Revisión de código antes de merge
 
-## 📚 Recursos Adicionales
+## Licencia
 
-- [Documentación de Express.js](https://expressjs.com/)
-- [Documentación de Mongoose](https://mongoosejs.com/)
-- [Documentación de TypeScript](https://www.typescriptlang.org/)
-- [Documentación de MongoDB](https://www.mongodb.com/docs/)
+Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
+
+## Integrantes
+
+- **Marcos Condori** - Fullstack Developer - [GitHub](https://github.com/Marco21c) | [LinkedIn](https://www.linkedin.com/in/marcos-condori-23c/)
+- **Ezequiel Pacheco** - Scrum Master & Fullstack Developer - [GitHub](https://github.com/EzePacheco) | [LinkedIn](https://www.linkedin.com/in/ezepacheco-dev/)
+- **Andres Chaile** - Backend Developer - [GitHub](https://github.com/andres777c) | [LinkedIn](https://www.linkedin.com/in/andres-chaile-491a6127b/)
+- **Leonardo Alcedo** - Backend Developer - [GitHub](https://github.com/leo99902) | [LinkedIn](https://www.linkedin.com/in/leonardo-alcedo-45a83027b/)
+- **Yanina Paez** - Frontend Developer - [GitHub](https://github.com/Yani02-gif) | [LinkedIn](https://www.linkedin.com/in/yanina-paez-1100582bb)
 
 ---
 
-⭐ Si este proyecto te resulta útil, ¡no olvides darle una estrella!
+Para reportar problemas o sugerencias, abrir un issue en el repositorio.
