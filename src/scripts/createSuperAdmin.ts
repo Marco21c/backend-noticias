@@ -16,8 +16,14 @@ async function createSuperAdmin() {
 			return;
 		}
 
-		const defaultPassword = 'TuContraseñaSegura123!';
-		const password = process.env.SUPERADMIN_PASSWORD || defaultPassword;
+		// Validar que la contraseña esté configurada
+		if (!process.env.SUPERADMIN_PASSWORD) {
+			console.error('❌ ERROR: SUPERADMIN_PASSWORD no está configurada');
+			console.error('   Configura SUPERADMIN_PASSWORD en el .env antes de ejecutar este script.');
+			process.exit(1);
+		}
+
+		const password = process.env.SUPERADMIN_PASSWORD;
 		const hashedPassword = await bcrypt.hash(password, 10);
 
 		const superAdmin = await UserModel.create({
