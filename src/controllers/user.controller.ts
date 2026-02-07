@@ -21,6 +21,9 @@ export class UserController {
 			return res.status(201).json({ message: 'Usuario creado correctamente', data: newUser });
 		} catch (error) {
 			const err: any = error;
+			if (err && err.message === 'FORBIDDEN_ROLE') {
+				return res.status(403).json({ message: 'No se puede crear usuarios con rol superadmin' });
+			}
 			if (err && err.message === 'EMAIL_DUPLICATE') {
 				return res.status(409).json({ message: 'El email ya existe' });
 			}
@@ -84,6 +87,7 @@ export class UserController {
 
 				return res.status(200).json({ message: 'Usuario editado correctamente', data: edited });
 			} catch (err: any) {
+				if (err && err.message === 'FORBIDDEN_ROLE') return res.status(403).json({ message: 'No se puede asignar rol superadmin' });
 				if (err && err.message === 'EMAIL_DUPLICATE') return res.status(409).json({ message: 'El email ya existe' });
 				if (err && err.message === 'INVALID_EMAIL') return res.status(400).json({ message: 'Email inválido' });
 				if (err && err.message === 'INVALID_PASSWORD') return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });

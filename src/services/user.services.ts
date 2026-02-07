@@ -20,6 +20,11 @@ export class UserService {
 	async createUser(userData: Partial<IUser> & { password: string }): Promise<IUser> {
 		const { password, ...rest } = userData;
 
+		// 🔒 SEGURIDAD: Bloquear creación de superadmin desde la API
+		if ((rest as any).role === 'superadmin') {
+			throw new Error('FORBIDDEN_ROLE');
+		}
+
 		// Validadores
 		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
@@ -52,6 +57,11 @@ export class UserService {
 
 	async updateUser(id: string, updateData: Partial<IUser> & { password?: string }): Promise<IUser | null> {
 		const data: any = { ...updateData };
+
+		// 🔒 SEGURIDAD: Bloquear cambio a rol superadmin desde la API
+		if (updateData.role === 'superadmin') {
+			throw new Error('FORBIDDEN_ROLE');
+		}
 
 		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
