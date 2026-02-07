@@ -4,6 +4,7 @@ import corsOptions from './src/config/cors.js';
 import './src/config/database.js';
 import mainRouter from './src/routes/main.routes.js';
 import env from './src/config/env.js';
+import { initializeSystem } from './src/config/initialSetup.js';
 
 
 const app = express();
@@ -18,10 +19,20 @@ app.use('/api', mainRouter);
 
 
 // Inicio del servidor
-app.listen(PORT, () => {
-  console.log(`Server running on port http://localhost:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-});
+async function startServer() {
+  try {
+    await initializeSystem();
+  } catch (error) {
+    console.error('❌ Error en la inicialización del sistema:', error);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+  });
+}
+
+startServer();
 
 
 export default app;
