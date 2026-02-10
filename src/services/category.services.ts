@@ -1,79 +1,96 @@
 import type { ICategory } from '../interfaces/category.interface.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
+import type { CreateCategoryInput, UpdateCategoryInput } from '../validations/category.schemas.js';
 
 /**
- * CategoryService - Capa de logica de negocio para Categories
- * Responsabilidad: Validaciones y reglas de negocio
+ * CategoryService - Capa de lógica de negocio para Categories
+ * Responsabilidad: Reglas de negocio, transformaciones
+ * NO valida formatos (eso lo hace Zod en el middleware)
  */
 export class CategoryService {
-	private categoryRepository: CategoryRepository;
+    private categoryRepository: CategoryRepository;
 
-	constructor(categoryRepository?: CategoryRepository) {
-		this.categoryRepository = categoryRepository || new CategoryRepository();
-	}
+    constructor(categoryRepository?: CategoryRepository) {
+        this.categoryRepository = categoryRepository || new CategoryRepository();
+    }
 
-	/**
-	 * Obtener todas las categorias
-	 */
-	async getAllCategories(): Promise<ICategory[]> {
-		return this.categoryRepository.findAll();
-	}
+    /**
+     * Obtener todas las categorías
+     */
+    async getAllCategories(): Promise<ICategory[]> {
+        return this.categoryRepository.findAll();
+    }
 
-	/**
-	 * Obtener categoria por ID
-	 */
-	async getCategoryById(id: string): Promise<ICategory | null> {
-		return this.categoryRepository.findById(id);
-	}
+    /**
+     * Obtener categoría por ID
+     */
+    async getCategoryById(id: string): Promise<ICategory | null> {
+        return this.categoryRepository.findById(id);
+    }
 
-	/**
-	 * Crear una nueva categoria
-	 */
-	async createCategory(categoryData: Partial<ICategory>): Promise<ICategory> {
-		this.validateName(categoryData.name);
+    /**
+     * Crear una nueva categoría
+     * @param categoryData - Datos validados por Zod (futuro: CreateCategoryDto)
+     */
+    async createCategory(categoryData: CreateCategoryInput): Promise<ICategory> {
+        const { name, description, isActive } = categoryData;
 
-		const existing = await this.categoryRepository.findByName(categoryData.name as string);
-		if (existing) {
-			throw new Error('NAME_DUPLICATE');
-		}
+        // REGLA DE NEGOCIO: Nombre único
+        const existing = await this.categoryRepository.findByName(name);
+        if (existing) {
+            throw new Error('NAME_DUPLICATE');
+        }
 
-		return this.categoryRepository.create({
-			name: String(categoryData.name).trim(),
-			description: categoryData.description ?? '',
-			isActive: categoryData.isActive ?? true
-		});
-	}
+        return this.categoryRepository.create({
+            name,
+            description,
+            isActive
+        });
+    }
 
-	/**
-	 * Editar una categoria existente
-	 */
-	async updateCategory(id: string, categoryData: Partial<ICategory>): Promise<ICategory | null> {
-		if (categoryData.name) {
-			this.validateName(categoryData.name);
-			const existing = await this.categoryRepository.findByName(categoryData.name);
-			if (existing && existing._id?.toString() !== id) {
-				throw new Error('NAME_DUPLICATE');
-			}
-		}
+    /**
+     * Editar una categoría existente
+     * @param id - ID de la categoría a actualizar
+     * @param categoryData - Datos validados por Zod (futuro: UpdateCategoryDto)
+     */
+    async updateCategory(id: string, categoryData: UpdateCategoryInput): Promise<ICategory | null> {
+        // REGLA DE NEGOCIO: Nombre único (si se está actualizando)
+        if (categoryData.name) {
+            const existing = await this.categoryRepository.findByName(categoryData.name);
+            if (existing && existing._id?.toString() !== id) {
+                throw new Error('NAME_DUPLICATE');
+            }
+        }
 
-		const payload: Partial<ICategory> = {};
-		if (categoryData.name) payload.name = String(categoryData.name).trim();
-		if (typeof categoryData.description === 'string') payload.description = categoryData.description;
-		if (typeof categoryData.isActive === 'boolean') payload.isActive = categoryData.isActive;
+        // Limpiar undefined con helper
+        const updatePayload = this.cleanUndefined(categoryData) as Partial<ICategory>;
 
-		return this.categoryRepository.update(id, payload);
-	}
+        return this.categoryRepository.update(id, updatePayload);
+    }
 
-	/**
-	 * Eliminar una categoria
-	 */
-	async deleteCategory(id: string): Promise<ICategory | null> {
-		return this.categoryRepository.delete(id);
-	}
+    /**
+     * Eliminar una categoría
+     */
+    async deleteCategory(id: string): Promise<ICategory | null> {
+        return this.categoryRepository.delete(id);
+    }
 
-	private validateName(name?: string): void {
-		if (!name || typeof name !== 'string' || name.trim().length < 2) {
-			throw new Error('INVALID_NAME');
-		}
-	}
+
+
+    // ========== Método privado helper ==========
+
+    /**
+     * Elimina propiedades undefined del objeto
+     */
+    private cleanUndefined<T extends Record<string, any>>(obj: T): Record<string, any> {
+        const result: Record<string, any> = {};
+        
+        for (const [key, value] of Object.entries(obj)) {
+            if (value !== undefined) {
+                result[key] = value;
+            }
+        }
+        
+        return result;
+    }
 }

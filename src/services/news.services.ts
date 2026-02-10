@@ -1,12 +1,8 @@
 import type { INews } from '../interfaces/news.interface.js';
 import { NewsRepository } from '../repositories/news.repository.js';
 import { Types } from 'mongoose';
+import type { CreateNewsInput, UpdateNewsInput, NewsQuery } from '../validations/news.schemas.js';
 
-/**
- * NewsService - Capa de lógica de negocio para News
- * Responsabilidad: Procesar y validar reglas de negocio
- * Independiente de Express y de la base de datos
- */
 export class NewsService {
     private newsRepository: NewsRepository;
 
@@ -16,40 +12,41 @@ export class NewsService {
 
     /**
      * Obtener todas las noticias con filtros opcionales
+     * @param filters - Query params validados (futuro: NewsQueryDto)
      */
-    async getAllNews(filters?: { status?: string; author?: string }): Promise<INews[]> {
+    async getAllNews(filters?: NewsQuery): Promise<INews[]> {
         const query: any = {};
-        
+      
         if (filters?.status) {
-            query.status = filters.status;
+          query.status = filters.status;
         }
-        
+      
         if (filters?.author) {
-            try {
-                query.author = new Types.ObjectId(filters.author);
-            } catch {
-                // Si no es un ObjectId válido, devolver array vacío
-                return [];
-            }
+          try {
+            query.author = new Types.ObjectId(filters.author);
+          } catch {
+            return [];
+          }
         }
-        
+      
         return this.newsRepository.findAll(query);
     }
 
     /**
      * Crear una nueva noticia
-     * Aplica reglas de negocio: estado inicial 'draft', fecha de publicación null
+     * @param newsData - Datos validados (futuro: CreateNewsDto)
+     * @param authorId - ID del autor autenticado
      */
     async createNews(
-        newsData: Omit<INews, 'author' | 'status' | 'publicationDate'>,
+        newsData: CreateNewsInput,
         authorId: Types.ObjectId
     ): Promise<INews> {
-        const newsToCreate = {
-            ...newsData,
-            author: authorId,
-            status: 'draft' as const,
-            publicationDate: null
-        };
+      const newsToCreate = this.cleanUndefined({
+        ...newsData,
+        author: authorId,
+        status: 'draft' as const,
+        publicationDate: null
+    }) as Partial<INews>;
         
         return this.newsRepository.create(newsToCreate);
     }
@@ -70,10 +67,13 @@ export class NewsService {
 
     /**
      * Editar una noticia existente
+     * @param id - ID de la noticia
+     * @param newsData - Datos a actualizar (futuro: UpdateNewsDto)
      */
-    async editNews(id: string, newsData: Partial<INews>): Promise<INews | null> {
-        return this.newsRepository.update(id, newsData);
-    }
+    async editNews(id: string, newsData: UpdateNewsInput): Promise<INews | null> {
+      const cleanedData = this.cleanUndefined(newsData) as Partial<INews>;
+      return this.newsRepository.update(id, cleanedData);
+  }
 
     /**
      * Eliminar una noticia
@@ -81,4 +81,21 @@ export class NewsService {
     async deleteNews(id: string): Promise<INews | null> {
         return this.newsRepository.delete(id);
     }
-};
+
+    // ========== Método privado helper ==========
+    
+    /**
+     * Elimina propiedades undefined del objeto
+     */
+    private cleanUndefined<T extends Record<string, any>>(obj: T): Record<string, any> {
+      const result: Record<string, any> = {};
+      
+      for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined) {
+              result[key] = value;
+          }
+      }
+      
+      return result;
+  }
+}

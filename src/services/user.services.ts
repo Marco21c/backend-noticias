@@ -1,152 +1,132 @@
 import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
+import type { CreateUserInput, UpdateUserInput } from '../validations/user.schemas.js';
 
 /**
  * UserService - Capa de lógica de negocio para Users
- * Responsabilidad: Validaciones, reglas de negocio, transformaciones
+ * Responsabilidad: Reglas de negocio, transformaciones, operaciones complejas
+ * NO valida formatos (eso lo hace Zod en el middleware)
  */
 export class UserService {
-	private userRepository: UserRepository;
+    private userRepository: UserRepository;
 
-	constructor(userRepository?: UserRepository) {
-		this.userRepository = userRepository || new UserRepository();
-	}
+    constructor(userRepository?: UserRepository) {
+        this.userRepository = userRepository || new UserRepository();
+    }
 
-	/**
-	 * Obtener todos los usuarios (sin password)
-	 */
-	async getAllUsers(): Promise<IUser[]> {
-		return this.userRepository.findAll('-password');
-	}
+    /**
+     * Obtener todos los usuarios (sin password)
+     */
+    async getAllUsers(): Promise<IUser[]> {
+        return this.userRepository.findAll('-password');
+    }
 
-	/**
-	 * Obtener usuario por ID (sin password)
-	 */
-	async getUserById(id: string): Promise<IUser | null> {
-		return this.userRepository.findById(id, '-password');
-	}
+    /**
+     * Obtener usuario por ID (sin password)
+     */
+    async getUserById(id: string): Promise<IUser | null> {
+        return this.userRepository.findById(id, '-password');
+    }
 
-	/**
-	 * Obtener usuario por email (con password)
-	 */
-	async getUserByEmail(email: string): Promise<IUser | null> {
-		return this.userRepository.findByEmail(email);
-	}
+    /**
+     * Obtener usuario por email (con password para autenticación)
+     */
+    async getUserByEmail(email: string): Promise<IUser | null> {
+        return this.userRepository.findByEmail(email);
+    }
 
-	/**
-	 * Crear un nuevo usuario
-	 * Aplica validaciones de negocio y hasheo de password
-	 */
-	async createUser(userData: Partial<IUser> & { password: string }): Promise<IUser> {
-		const { password, ...rest } = userData;
+    /**
+     * Crear un nuevo usuario
+     * @param userData - Datos validados por Zod (futuro: CreateUserDto)
+     * Aplica reglas de negocio: bloqueo de superadmin, email único, hasheo
+     */
+    async createUser(userData: CreateUserInput): Promise<IUser> {
+        const { password, role, email, ...rest } = userData;
 
-		// 🔒 REGLA DE NEGOCIO: Bloquear creación de superadmin desde la API
-		if ((rest as any).role === 'superadmin') {
-			throw new Error('FORBIDDEN_ROLE');
-		}
+        // REGLA DE NEGOCIO: Email único
+        const emailExists = await this.userRepository.emailExists(email);
+        if (emailExists) {
+            throw new Error('EMAIL_DUPLICATE');
+        }
 
-		// Validaciones de formato
-		this.validateEmail((rest as any).email);
-		this.validatePassword(password);
+        // Hashear password
+        const hashedPassword = await this.hashPassword(password);
 
-		// Verificar email duplicado
-		const emailExists = await this.userRepository.emailExists((rest as any).email);
-		if (emailExists) {
-			throw new Error('EMAIL_DUPLICATE');
-		}
+        // Crear usuario
+        const newUser = await this.userRepository.create({ 
+            ...rest, 
+            email,
+            role,
+            password: hashedPassword 
+        });
+        
+        // Retornar sin password
+        return this.sanitizeUser(newUser);
+    }
 
-		// Hashear password
-		const hashedPassword = await this.hashPassword(password);
+    /**
+     * Actualizar un usuario existente
+     * @param id - ID del usuario a actualizar
+     * @param updateData - Datos validados por Zod (futuro: UpdateUserDto)
+     * Aplica reglas de negocio: bloqueo de superadmin, email único
+     */
+    async updateUser(id: string, updateData: UpdateUserInput): Promise<IUser | null> {
+        const { password, role, email, ...rest } = updateData;
 
-		// Crear usuario
-		const newUser = await this.userRepository.create({ ...rest, password: hashedPassword });
-		
-		// Retornar sin password
-		return this.sanitizeUser(newUser);
-	}
+        const dataToUpdate: any = { ...rest };
 
-	/**
-	 * Actualizar un usuario existente
-	 * Aplica validaciones y hasheo de password si es necesario
-	 */
-	async updateUser(id: string, updateData: Partial<IUser> & { password?: string }): Promise<IUser | null> {
-		const data: any = { ...updateData };
+        // REGLA DE NEGOCIO: Email único (si se está actualizando)
+        if (email) {
+            const emailExists = await this.userRepository.emailExists(email, id);
+            if (emailExists) {
+                throw new Error('EMAIL_DUPLICATE');
+            }
+            dataToUpdate.email = email;
+        }
 
-		// 🔒 REGLA DE NEGOCIO: Bloquear cambio a rol superadmin desde la API
-		if (updateData?.role === 'superadmin') {
-			throw new Error('FORBIDDEN_ROLE');
-		}
+        // Agregar role si existe
+        if (role) {
+            dataToUpdate.role = role;
+        }
 
-		// Validar email si se está actualizando
-		if (updateData.email) {
-			this.validateEmail(updateData.email);
-			
-			// Verificar email duplicado (excluyendo el usuario actual)
-			const emailExists = await this.userRepository.emailExists(updateData.email, id);
-			if (emailExists) {
-				throw new Error('EMAIL_DUPLICATE');
-			}
-			data.email = updateData.email;
-		}
+        // Hashear password si se está actualizando
+        if (password) {
+            dataToUpdate.password = await this.hashPassword(password);
+        }
 
-		// Validar y hashear password si se está actualizando
-		if (updateData.password) {
-			this.validatePassword(updateData.password);
-			data.password = await this.hashPassword(updateData.password);
-		}
+        // Actualizar usuario
+        const updated = await this.userRepository.update(id, dataToUpdate);
+        if (!updated) return null;
 
-		// Actualizar usuario
-		const updated = await this.userRepository.update(id, data);
-		if (!updated) return null;
+        // Retornar sin password
+        return this.sanitizeUser(updated);
+    }
 
-		// Retornar sin password
-		return this.sanitizeUser(updated);
-	}
+    /**
+     * Eliminar un usuario
+     */
+    async deleteUser(id: string): Promise<IUser | null> {
+        return this.userRepository.delete(id);
+    }
 
-	/**
-	 * Eliminar un usuario
-	 */
-	async deleteUser(id: string): Promise<IUser | null> {
-		return this.userRepository.delete(id);
-	}
+    // ========== Métodos privados ==========
 
-	// ========== Métodos privados de validación ==========
+    /**
+     * Hashear password con bcrypt
+     */
+    private async hashPassword(password: string): Promise<string> {
+        const salt = await bcrypt.genSalt(10);
+        return bcrypt.hash(password, salt);
+    }
 
-	/**
-	 * Validar formato de email
-	 */
-	private validateEmail(email: string): void {
-		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!email || typeof email !== 'string' || !emailFormat.test(email)) {
-			throw new Error('INVALID_EMAIL');
-		}
-	}
-
-	/**
-	 * Validar fortaleza de password
-	 */
-	private validatePassword(password: string): void {
-		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-		if (!password || typeof password !== 'string' || !passwordStrong.test(password)) {
-			throw new Error('INVALID_PASSWORD');
-		}
-	}
-
-	/**
-	 * Hashear password
-	 */
-	private async hashPassword(password: string): Promise<string> {
-		const salt = await bcrypt.genSalt(10);
-		return bcrypt.hash(password, salt);
-	}
-
-	/**
-	 * Eliminar campos sensibles del usuario
-	 */
-	private sanitizeUser(user: any): IUser {
-		const obj = user.toObject ? user.toObject() : user;
-		delete obj.password;
-		return obj;
-	}
+    /**
+     * Eliminar campos sensibles del usuario
+     * TODO: En el futuro, usar UserResponseDto para esto
+     */
+    private sanitizeUser(user: any): IUser {
+        const obj = user.toObject ? user.toObject() : user;
+        delete obj.password;
+        return obj;
+    }
 }
