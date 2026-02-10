@@ -1,23 +1,42 @@
 import type { Request, Response } from 'express';
 import { UserService } from '../services/user.services.js';
 
+/**
+ * UserController - Capa de presentación/API
+ * Responsabilidad: Orquestar requests/responses HTTP
+ */
 export class UserController {
+	private userService: UserService;
+
+	constructor(userService?: UserService) {
+		this.userService = userService || new UserService();
+		
+		// Vincular métodos al contexto de la clase
+		this.getUsers = this.getUsers.bind(this);
+		this.createUser = this.createUser.bind(this);
+		this.getUserById = this.getUserById.bind(this);
+		this.getUserByEmail = this.getUserByEmail.bind(this);
+		this.editUser = this.editUser.bind(this);
+		this.deleteUser = this.deleteUser.bind(this);
+	}
+
 	async getUsers(req: Request, res: Response): Promise<Response> {
 		try {
-			const users = await new UserService().getAllUsers();
+			const users = await this.userService.getAllUsers();
 			return res.status(200).json(users);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuarios', error });
+			console.error('Error en getUsers:', error);
+			return res.status(500).json({ 
+				message: 'Error al obtener usuarios', 
+				error: error instanceof Error ? error.message : 'Error desconocido' 
+			});
 		}
 	}
 
 	async createUser(req: Request, res: Response): Promise<Response> {
 		try {
 			const userData = req.body;
-			if (!userData || typeof userData.password !== 'string' || !userData.email) {
-				return res.status(400).json({ message: 'Datos de usuario inválidos' });
-			}
-			const newUser = await new UserService().createUser(userData);
+			const newUser = await this.userService.createUser(userData);
 			return res.status(201).json({ message: 'Usuario creado correctamente', data: newUser });
 		} catch (error) {
 			const err: any = error;
@@ -33,7 +52,11 @@ export class UserController {
 			if (err && err.message === 'INVALID_PASSWORD') {
 				return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });
 			}
-			return res.status(500).json({ message: 'Error al crear usuario', error });
+			console.error('Error en createUser:', error);
+		return res.status(500).json({ 
+			message: 'Error al crear usuario', 
+			error: error instanceof Error ? error.message : 'Error desconocido' 
+		});
 		}
 	}
 
@@ -43,11 +66,15 @@ export class UserController {
 			if (!id || typeof id !== 'string') {
 				return res.status(400).json({ message: 'ID de usuario inválido' });
 			}
-			const user = await new UserService().getUserById(id);
+			const user = await this.userService.getUserById(id);
 			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 			return res.status(200).json(user);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuario', error });
+			console.error('Error en getUserById:', error);
+			return res.status(500).json({ 
+				message: 'Error al obtener usuario', 
+				error: error instanceof Error ? error.message : 'Error desconocido' 
+			});
 		}
 	}
 
@@ -57,32 +84,31 @@ export class UserController {
 			if (!email || typeof email !== 'string') {
 				return res.status(400).json({ message: 'Email inválido' });
 			}
-			const user = await new UserService().getUserByEmail(email);
+			const user = await this.userService.getUserByEmail(email);
 			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 			return res.status(200).json(user);
 		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuario', error });
+			console.error('Error en getUserByEmail:', error);
+			return res.status(500).json({ 
+				message: 'Error al obtener usuario', 
+				error: error instanceof Error ? error.message : 'Error desconocido' 
+			});
 		}
 	}
 
 	async editUser(req: Request, res: Response): Promise<Response> {
 		try {
-			const idFromParams = req.params.id;
-			let id: string | undefined = undefined;
-
-			if (idFromParams && typeof idFromParams === 'string') {
-				id = idFromParams;
-			} else if (req.query && typeof req.query._id === 'string') {
-				id = req.query._id;
-			} else if (req.query && Array.isArray(req.query._id) && typeof req.query._id[0] === 'string') {
-				id = req.query._id[0];
+			const { id } = req.params;
+			const userData = req.body;
+			if (!id || typeof id !== 'string') {
+				return res.status(400).json({ message: 'ID de usuario inválido' });
+			}
+			if (!userData || typeof userData !== 'object') {
+				return res.status(400).json({ message: 'Datos de usuario inválidos' });
 			}
 
-			const userData = req.body;
-			if (!id) return res.status(400).json({ message: 'ID de usuario inválido' });
-
 			try {
-				const edited = await new UserService().updateUser(id, userData);
+				const edited = await this.userService.updateUser(id, userData);
 				if (!edited) return res.status(404).json({ message: 'Usuario no encontrado' });
 
 				return res.status(200).json({ message: 'Usuario editado correctamente', data: edited });
@@ -94,7 +120,11 @@ export class UserController {
 				throw err;
 			}
 		} catch (error) {
-			return res.status(500).json({ message: 'Error al editar usuario', error });
+			console.error('Error en editUser:', error);
+			return res.status(500).json({ 
+				message: 'Error al editar usuario', 
+				error: error instanceof Error ? error.message : 'Error desconocido' 
+			});
 		}
 	}
 
@@ -104,11 +134,15 @@ export class UserController {
 			if (!id || typeof id !== 'string') {
 				return res.status(400).json({ message: 'ID de usuario inválido' });
 			}
-			const deletedUser = await new UserService().deleteUser(id);
+			const deletedUser = await this.userService.deleteUser(id);
 			if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
 			return res.status(200).json({ message: 'Usuario eliminado correctamente', data: deletedUser });
 		} catch (error) {
-			return res.status(500).json({ message: 'Error al eliminar usuario', error });
+			console.error('Error en deleteUser:', error);
+			return res.status(500).json({ 
+				message: 'Error al eliminar usuario', 
+				error: error instanceof Error ? error.message : 'Error desconocido' 
+			});
 		}
 	}
 }
