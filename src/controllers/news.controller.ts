@@ -1,8 +1,24 @@
-// TODO: Implementar controller de News
 import type { Request, Response } from 'express';
 import { NewsService } from '../services/news.services.js';
 
+/**
+ * NewsController - Capa de presentación/API
+ * Responsabilidad: Orquestar requests/responses HTTP
+ */
 export class NewsController {
+    private newsService: NewsService;
+
+    constructor(newsService?: NewsService) {
+        this.newsService = newsService || new NewsService();
+        
+        // Vincular métodos al contexto de la clase
+        this.getNews = this.getNews.bind(this);
+        this.createNews = this.createNews.bind(this);
+        this.getNewsById = this.getNewsById.bind(this);
+        this.getNewsByCategory = this.getNewsByCategory.bind(this);
+        this.editNews = this.editNews.bind(this);
+        this.deleteNews = this.deleteNews.bind(this);
+    }
 
     async getNews(req: Request, res: Response): Promise<Response> {
         try {
@@ -17,13 +33,17 @@ export class NewsController {
                 filters.author = author;
             }
             
-            const news = await new NewsService().getAllNews(
+            const news = await this.newsService.getAllNews(
                 Object.keys(filters).length > 0 ? filters : undefined
             );
             
             return res.status(200).json(news);
         } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticias', error });
+            console.error('Error en getNews:', error);
+            return res.status(500).json({ 
+                message: 'Error al obtener noticias', 
+                error: error instanceof Error ? error.message : 'Error desconocido' 
+            });
         }
     }
 
@@ -36,8 +56,7 @@ export class NewsController {
                 return res.status(401).json({ message: 'Usuario no autenticado' });
             }
             
-            // Pasar explícitamente el authorId al service
-            const newNews = await new NewsService().createNews(newsData, user._id);
+            const newNews = await this.newsService.createNews(newsData, user._id);
             return res.status(201).json({ message: 'Noticia creada exitosamente', data: newNews });
         } catch (error) {
             return res.status(500).json({ message: 'Error al crear noticia', error });
@@ -47,12 +66,10 @@ export class NewsController {
     async getNewsById(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-
             if (!id || typeof id !== 'string') {
                 return res.status(400).json({ message: 'ID de noticia inválido' });
             }
-
-            const news = await new NewsService().getNewsById(id);
+            const news = await this.newsService.getNewsById(id);
 
             if (!news) {
                 return res.status(404).json({ message: 'Noticia no encontrada' });
@@ -72,7 +89,7 @@ export class NewsController {
                 return res.status(400).json({ message: 'Categoría de noticia inválida' });
             }
 
-            const news = await new NewsService().getNewsByCategory(category);
+            const news = await this.newsService.getNewsByCategory(category);
 
             if (!news || news.length === 0) {
                 return res.status(404).json({ message: 'No se encontraron noticias para esta categoría' });
@@ -87,24 +104,13 @@ export class NewsController {
 
     async editNews(req: Request, res: Response): Promise<Response> {
         try {
-            const idFromParams = req.params.id;
-            let id: string | undefined = undefined;
-
-            if (idFromParams && typeof idFromParams === 'string') {
-                id = idFromParams;
-            } else if (req.query && typeof req.query._id === 'string') {
-                id = req.query._id;
-            } else if (req.query && Array.isArray(req.query._id) && typeof req.query._id[0] === 'string') {
-                id = req.query._id[0];
-            }
-
+            const { id } = req.params;
             const newsData = req.body;
-
-            if (!id) {
+            if (!id || typeof id !== 'string') {
                 return res.status(400).json({ message: 'ID de noticia inválido' });
             }
 
-            const edited = await new NewsService().editNews(id, newsData);
+            const edited = await this.newsService.editNews(id, newsData);
 
             if (!edited) {
                 return res.status(404).json({ message: 'Noticia no encontrada' });
@@ -119,12 +125,10 @@ export class NewsController {
     async deleteNews(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            
             if (!id || typeof id !== 'string') {
                 return res.status(400).json({ message: 'ID de noticia inválido' });
             }
-            
-            const deletedNews = await new NewsService().deleteNews(id);
+            const deletedNews = await this.newsService.deleteNews(id);
             
             if (!deletedNews) {
                 return res.status(404).json({ message: 'Noticia no encontrada' });

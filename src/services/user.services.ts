@@ -1,97 +1,152 @@
 import type { IUser } from '../interfaces/user.interface.js';
-import UserModel from '../models/user.model.js';
+import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
 
+/**
+ * UserService - Capa de lógica de negocio para Users
+ * Responsabilidad: Validaciones, reglas de negocio, transformaciones
+ */
 export class UserService {
+	private userRepository: UserRepository;
 
-    
+	constructor(userRepository?: UserRepository) {
+		this.userRepository = userRepository || new UserRepository();
+	}
+
+	/**
+	 * Obtener todos los usuarios (sin password)
+	 */
 	async getAllUsers(): Promise<IUser[]> {
-		return UserModel.find().select('-password').exec();
+		return this.userRepository.findAll('-password');
 	}
 
+	/**
+	 * Obtener usuario por ID (sin password)
+	 */
 	async getUserById(id: string): Promise<IUser | null> {
-		return UserModel.findById(id).select('-password').exec();
+		return this.userRepository.findById(id, '-password');
 	}
 
+	/**
+	 * Obtener usuario por email (con password)
+	 */
 	async getUserByEmail(email: string): Promise<IUser | null> {
-		return UserModel.findOne({ email }).exec();
+		return this.userRepository.findByEmail(email);
 	}
 
+	/**
+	 * Crear un nuevo usuario
+	 * Aplica validaciones de negocio y hasheo de password
+	 */
 	async createUser(userData: Partial<IUser> & { password: string }): Promise<IUser> {
 		const { password, ...rest } = userData;
 
-		// 🔒 SEGURIDAD: Bloquear creación de superadmin desde la API
+		// 🔒 REGLA DE NEGOCIO: Bloquear creación de superadmin desde la API
 		if ((rest as any).role === 'superadmin') {
 			throw new Error('FORBIDDEN_ROLE');
 		}
 
-		// Validadores
-		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+		// Validaciones de formato
+		this.validateEmail((rest as any).email);
+		this.validatePassword(password);
 
-		const email = (rest as any).email;
-		if (!email || typeof email !== 'string' || !emailFormat.test(email)) {
-			throw new Error('INVALID_EMAIL');
+		// Verificar email duplicado
+		const emailExists = await this.userRepository.emailExists((rest as any).email);
+		if (emailExists) {
+			throw new Error('EMAIL_DUPLICATE');
 		}
 
-		if (!password || typeof password !== 'string' || !passwordStrong.test(password)) {
-			throw new Error('INVALID_PASSWORD');
-		}
+		// Hashear password
+		const hashedPassword = await this.hashPassword(password);
 
-	
-		{
-			const escaped = String(email).replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-			const emailRegex = new RegExp('^' + escaped + '$', 'i');
-			const existing = await UserModel.findOne({ email: { $regex: emailRegex } }).exec();
-			if (existing) throw new Error('EMAIL_DUPLICATE');
-		}
-
-		const salt = await bcrypt.genSalt(10);
-		const hashed = await bcrypt.hash(password, salt);
-		const newUser = new UserModel({ ...rest, password: hashed });
-		const saved = await newUser.save();
-		const obj = (saved as any).toObject ? (saved as any).toObject() : saved;
-		delete obj.password;
-		return obj;
+		// Crear usuario
+		const newUser = await this.userRepository.create({ ...rest, password: hashedPassword });
+		
+		// Retornar sin password
+		return this.sanitizeUser(newUser);
 	}
 
+	/**
+	 * Actualizar un usuario existente
+	 * Aplica validaciones y hasheo de password si es necesario
+	 */
 	async updateUser(id: string, updateData: Partial<IUser> & { password?: string }): Promise<IUser | null> {
 		const data: any = { ...updateData };
 
-		// 🔒 SEGURIDAD: Bloquear cambio a rol superadmin desde la API
-		if (updateData.role === 'superadmin') {
+		// 🔒 REGLA DE NEGOCIO: Bloquear cambio a rol superadmin desde la API
+		if (updateData?.role === 'superadmin') {
 			throw new Error('FORBIDDEN_ROLE');
 		}
 
-		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-
+		// Validar email si se está actualizando
 		if (updateData.email) {
-			const email = String(updateData.email);
-			if (!emailFormat.test(email)) throw new Error('INVALID_EMAIL');
-
-			const escaped = email.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-			const emailRegex = new RegExp('^' + escaped + '$', 'i');
-			const existing = await UserModel.findOne({ email: { $regex: emailRegex } }).exec();
-			if (existing && existing._id.toString() !== id) throw new Error('EMAIL_DUPLICATE');
-			data.email = email;
+			this.validateEmail(updateData.email);
+			
+			// Verificar email duplicado (excluyendo el usuario actual)
+			const emailExists = await this.userRepository.emailExists(updateData.email, id);
+			if (emailExists) {
+				throw new Error('EMAIL_DUPLICATE');
+			}
+			data.email = updateData.email;
 		}
 
-	
+		// Validar y hashear password si se está actualizando
 		if (updateData.password) {
-			if (!passwordStrong.test(updateData.password)) throw new Error('INVALID_PASSWORD');
-			const salt = await bcrypt.genSalt(10);
-			data.password = await bcrypt.hash(updateData.password, salt);
+			this.validatePassword(updateData.password);
+			data.password = await this.hashPassword(updateData.password);
 		}
 
-		const updated = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
+		// Actualizar usuario
+		const updated = await this.userRepository.update(id, data);
 		if (!updated) return null;
-		const obj = (updated as any).toObject ? (updated as any).toObject() : updated;
-		delete obj.password;
-		return obj;
+
+		// Retornar sin password
+		return this.sanitizeUser(updated);
 	}
 
+	/**
+	 * Eliminar un usuario
+	 */
 	async deleteUser(id: string): Promise<IUser | null> {
-		return UserModel.findByIdAndDelete(id).exec();
+		return this.userRepository.delete(id);
+	}
+
+	// ========== Métodos privados de validación ==========
+
+	/**
+	 * Validar formato de email
+	 */
+	private validateEmail(email: string): void {
+		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!email || typeof email !== 'string' || !emailFormat.test(email)) {
+			throw new Error('INVALID_EMAIL');
+		}
+	}
+
+	/**
+	 * Validar fortaleza de password
+	 */
+	private validatePassword(password: string): void {
+		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+		if (!password || typeof password !== 'string' || !passwordStrong.test(password)) {
+			throw new Error('INVALID_PASSWORD');
+		}
+	}
+
+	/**
+	 * Hashear password
+	 */
+	private async hashPassword(password: string): Promise<string> {
+		const salt = await bcrypt.genSalt(10);
+		return bcrypt.hash(password, salt);
+	}
+
+	/**
+	 * Eliminar campos sensibles del usuario
+	 */
+	private sanitizeUser(user: any): IUser {
+		const obj = user.toObject ? user.toObject() : user;
+		delete obj.password;
+		return obj;
 	}
 }
