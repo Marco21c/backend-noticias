@@ -7,7 +7,7 @@ export interface INews {
   content: string;
   highlights: string[];
   author: Types.ObjectId | string;
-  category: 'politic' | 'economy' | 'sports' | 'technology' | 'health' | 'entertainment' | 'science' | 'world' | 'local' | 'education' | 'travel' | 'lifestyle' | 'international';
+  category: Types.ObjectId | string;
   mainImage?: string;
   source?: string;
   variant: 'highlighted'| 'featured'| 'default',
