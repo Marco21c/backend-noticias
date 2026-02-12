@@ -11,7 +11,7 @@ const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
 // ============================================
 const baseUserSchema = z.object({
     email: z.email('Email inválido'),
-    role: z.enum(['admin', 'editor', 'user']).default('user'),
+    role: z.enum(['admin', 'editor', 'user', 'superadmin']).default('user'),
     name: z.string().min(2, 'Nombre demasiado corto'),
     lastName: z.string().min(2, 'Apellido demasiado corto'),
 });
