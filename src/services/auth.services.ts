@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import env from '../config/env.js';
 import type { LoginInput } from '../validations/auth.schemas.js';
+import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
 /**
  * AuthService - Capa de lógica de negocio para autenticación
@@ -24,7 +25,7 @@ export class AuthService {
      */
     async login(loginData: LoginInput): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
         const { email, password } = loginData;
-        
+
         // REGLA DE NEGOCIO: Usuario debe existir
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
@@ -47,7 +48,7 @@ export class AuthService {
         });
 
         // Retornar usuario sin password
-        const userWithoutPassword = this.sanitizeUser(user);
+        const userWithoutPassword = sanitizeUser(user);
 
         return { user: userWithoutPassword, token };
     }
@@ -59,11 +60,11 @@ export class AuthService {
     signToken(payload: object): string {
         const secret = env.JWT_SECRET;
         const expiresIn = env.JWT_EXPIRES_IN || '7d';
-        
+
         if (!secret) {
             throw new Error('JWT_SECRET_MISSING');
         }
-        
+
         return jwt.sign(payload, secret, { expiresIn } as SignOptions);
     }
 
@@ -73,11 +74,11 @@ export class AuthService {
      */
     verifyToken(token: string): jwt.JwtPayload | string {
         const secret = env.JWT_SECRET;
-        
+
         if (!secret) {
             throw new Error('JWT_SECRET_MISSING');
         }
-        
+
         return jwt.verify(token, secret);
     }
 
@@ -89,23 +90,11 @@ export class AuthService {
             const decoded = this.verifyToken(token) as any;
             const id = decoded?.id || decoded?._id;
             if (!id) return null;
-            
+
             return this.userRepository.findById(id, '-password');
         } catch (err) {
             return null;
         }
-    }
-
-    // ========== Método privado ==========
-
-    /**
-     * Eliminar campos sensibles del usuario
-     * TODO: En el futuro, usar AuthResponseDto para esto
-     */
-    private sanitizeUser(user: any): Omit<IUser, 'password'> {
-        const obj = user.toObject ? user.toObject() : user;
-        delete obj.password;
-        return obj;
     }
 }
 

@@ -10,7 +10,7 @@ const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
 // SCHEMAS DE VALIDACIÓN
 // ============================================
 const baseUserSchema = z.object({
-    email: z.string().email('Email inválido'),
+    email: z.email('Email inválido'),
     role: z.enum(['admin', 'editor', 'user']).default('user'),
     name: z.string().min(2, 'Nombre demasiado corto'),
     lastName: z.string().min(2, 'Apellido demasiado corto'),
@@ -20,7 +20,7 @@ export const createUserSchema = baseUserSchema.extend({
     password: z
         .string()
         .regex(
-            passwordStrong, 
+            passwordStrong,
             'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial'
         ),
 });

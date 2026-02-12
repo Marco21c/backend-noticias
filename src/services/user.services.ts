@@ -2,6 +2,7 @@ import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
 import type { CreateUserInput, UpdateUserInput } from '../validations/user.schemas.js';
+import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
 /**
  * UserService - Capa de lógica de negocio para Users
@@ -54,15 +55,15 @@ export class UserService {
         const hashedPassword = await this.hashPassword(password);
 
         // Crear usuario
-        const newUser = await this.userRepository.create({ 
-            ...rest, 
+        const newUser = await this.userRepository.create({
+            ...rest,
             email,
             role,
-            password: hashedPassword 
+            password: hashedPassword
         });
-        
+
         // Retornar sin password
-        return this.sanitizeUser(newUser);
+        return sanitizeUser(newUser);
     }
 
     /**
@@ -100,7 +101,7 @@ export class UserService {
         if (!updated) return null;
 
         // Retornar sin password
-        return this.sanitizeUser(updated);
+        return sanitizeUser(updated);
     }
 
     /**
@@ -120,13 +121,4 @@ export class UserService {
         return bcrypt.hash(password, salt);
     }
 
-    /**
-     * Eliminar campos sensibles del usuario
-     * TODO: En el futuro, usar UserResponseDto para esto
-     */
-    private sanitizeUser(user: any): IUser {
-        const obj = user.toObject ? user.toObject() : user;
-        delete obj.password;
-        return obj;
-    }
 }

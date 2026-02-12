@@ -1,7 +1,7 @@
 import type { ICategory } from '../interfaces/category.interface.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
 import type { CreateCategoryInput, UpdateCategoryInput } from '../validations/category.schemas.js';
-
+import { cleanUndefined } from '../helpers/cleanUndefined.js';
 /**
  * CategoryService - Capa de lógica de negocio para Categories
  * Responsabilidad: Reglas de negocio, transformaciones
@@ -63,7 +63,7 @@ export class CategoryService {
         }
 
         // Limpiar undefined con helper
-        const updatePayload = this.cleanUndefined(categoryData) as Partial<ICategory>;
+        const updatePayload = cleanUndefined(categoryData) as Partial<ICategory>;
 
         return this.categoryRepository.update(id, updatePayload);
     }
@@ -75,22 +75,4 @@ export class CategoryService {
         return this.categoryRepository.delete(id);
     }
 
-
-
-    // ========== Método privado helper ==========
-
-    /**
-     * Elimina propiedades undefined del objeto
-     */
-    private cleanUndefined<T extends Record<string, any>>(obj: T): Record<string, any> {
-        const result: Record<string, any> = {};
-        
-        for (const [key, value] of Object.entries(obj)) {
-            if (value !== undefined) {
-                result[key] = value;
-            }
-        }
-        
-        return result;
-    }
 }
