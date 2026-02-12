@@ -1,10 +1,12 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { NewsService } from '../services/news.services.js';
+import { AppError } from '../errors/AppError.js';
 
 /**
  * NewsController - Capa de presentación/API
  * Responsabilidad: Orquestar requests/responses HTTP
  */
+
 export class NewsController {
     private newsService: NewsService;
 
@@ -20,8 +22,7 @@ export class NewsController {
         this.deleteNews = this.deleteNews.bind(this);
     }
 
-    async getNews(req: Request, res: Response): Promise<Response> {
-        try {
+    async getNews(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const { status, author } = req.query;
             const filters: { status?: string; author?: string } = {};
             
@@ -38,106 +39,85 @@ export class NewsController {
             );
             
             return res.status(200).json(news);
-        } catch (error) {
-            console.error('Error en getNews:', error);
-            return res.status(500).json({ 
-                message: 'Error al obtener noticias', 
-                error: error instanceof Error ? error.message : 'Error desconocido' 
-            });
-        }
+    
     }
 
-    async createNews(req: Request, res: Response): Promise<Response> {
-        try {
+    async createNews(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const newsData = req.body;
             const user = (req as any).user;
             
             if (!user || !user._id) {
-                return res.status(401).json({ message: 'Usuario no autenticado' });
+                throw new AppError('Usuario no autenticado', 401, 'UNAUTHENTICATED');
             }
-            
             const newNews = await this.newsService.createNews(newsData, user._id);
-            return res.status(201).json({ message: 'Noticia creada exitosamente', data: newNews });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al crear noticia', error });
-        }
+            return res
+                .status(201)
+                .json({ message: 'Noticia creada exitosamente', data: newNews });
+
     }
 
-    async getNewsById(req: Request, res: Response): Promise<Response> {
-        try {
+    async getNewsById(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const { id } = req.params;
             if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
+               throw new AppError('ID de noticia invalido', 400, 'INVALID_NEWS_ID'); 
             }
             const news = await this.newsService.getNewsById(id);
 
             if (!news) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
+                throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
             }
 
             return res.status(200).json(news);
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticia', error });
-        }
     }
 
-    async getNewsByCategory(req: Request, res: Response): Promise<Response> {
-        try {
+    async getNewsByCategory(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const category = req.query.category;
 
             if (!category || typeof category !== 'string') {
-                return res.status(400).json({ message: 'Categoría de noticia inválida' });
+                throw new AppError('Categoria de noticia invalida', 400, 'INVALID_NEWS_CATEGORY');
             }
 
             const news = await this.newsService.getNewsByCategory(category);
 
             if (!news || news.length === 0) {
-                return res.status(404).json({ message: 'No se encontraron noticias para esta categoría' });
+                throw new AppError('No se encontraron noticias para esta categoria', 404, 'NEWS_CATEGORY_NOT_FOUND');
             }
 
             return res.status(200).json(news);
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticias', error });
-        }
     }
 
 
-    async editNews(req: Request, res: Response): Promise<Response> {
-        try {
+    async editNews(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const { id } = req.params;
             const newsData = req.body;
+
             if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
-            }
-
-            const edited = await this.newsService.editNews(id, newsData);
-
-            if (!edited) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
-            }
+                throw new AppError('ID de noticia inválido', 400, 'INVALID_NEWS_ID');
+              }
+          
+              const edited = await this.newsService.editNews(id, newsData);
+          
+              if (!edited) {
+                throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
+              }
 
             return res.status(200).json({ message: 'Noticia editada exitosamente', data: edited });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al editar noticia', error });
-        }
     }
 
-    async deleteNews(req: Request, res: Response): Promise<Response> {
-        try {
+    async deleteNews(req: Request, res: Response, _next: NextFunction): Promise<Response> {
             const { id } = req.params;
-            if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
-            }
-            const deletedNews = await this.newsService.deleteNews(id);
             
-            if (!deletedNews) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
-            }
+            if (!id || typeof id !== 'string') {
+                throw new AppError('ID de noticia inválido', 400, 'INVALID_NEWS_ID');
+              }
+          
+              const deletedNews = await this.newsService.deleteNews(id);
+          
+              if (!deletedNews) {
+                throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
+              }
             
             return res.status(200).json({ message: 'Noticia eliminada exitosamente', data: deletedNews });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al eliminar noticia', error });
-        }
     }
        
 }

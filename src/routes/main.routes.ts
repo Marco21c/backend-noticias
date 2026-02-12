@@ -5,6 +5,7 @@ import loginRouter from './auth.route.js';
 import categoryRouter from './category.route.js';
 
 
+
 const router = Router();
 router.use('/news', newsRouter);
 router.use('/user', userRouter);
