@@ -1,10 +1,9 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
+import env from './env.js';
 
-const URI = process.env.NODE_ENV === 'production' 
-  ? process.env.MONGODB_URI 
-  : process.env.MONGODB_DEV || "mongodb://localhost:1515/noticiasdb";
+const URI = env.NODE_ENV === 'production'
+  ? env.MONGODB_URI
+  : env.MONGODB_DEV || "mongodb://localhost:1515/noticiasdb";
 
 console.log(`Conectando a MongoDB en modo: ${process.env.NODE_ENV}`);
 console.log(`URI: ${URI?.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`); // Oculta credenciales en logs

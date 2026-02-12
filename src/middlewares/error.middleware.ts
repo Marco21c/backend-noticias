@@ -1,48 +1,34 @@
-import type { NextFunction, Request, Response } from 'express';
-import mongoose from 'mongoose';
+import type { Request, Response, NextFunction } from 'express';
+
 import { AppError } from '../errors/AppError.js';
 
-export function notFound(req: Request, res: Response, next: NextFunction) {
-    next(
-        new AppError(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, 404, 'ROUTE_NOT_FOUND') 
-    );
+export function requestLogger(req: Request, _res: Response, next: NextFunction) {
+  const { method, path } = req;
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${method} ${path}`);
+  next();
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction){
-    let appError: AppError;
 
-    // Errores esperados
-    if (err instanceof AppError) {
-        appError = err;
-
-
-    // Errores de MongoDB
-    } else if (err instanceof mongoose.Error.CastError) {
-        appError = new AppError('ID de Mongo invalido', 400, 'INVALID_MONGO_ID', {
-            path: err.path,
-            value: err.value,
-        });
-    } else if (err instanceof mongoose.Error.ValidationError) {
-        appError = new AppError('Error de validacion', 400, 'MONGOOSE_VALIDATION_ERROR', err.errors);
-    } else if (typeof err === 'object' && err !== null && 'code' in err && (err as any).code === 11000) {
-        appError = new AppError('Recurso duplicado', 409, 'DUPLICATE_KEY', (err as any).keyValue);
-
-    // Errores desconocidos
-    } else {
-        appError = new AppError('Error interno del servidor', 500, 'INTERNAL_SERVER_ERROR');
-    }
-
-    const payload: any = {
-        success: false,
-        message: appError.message,
-        code: appError.code,
-    };
-
-    if (appError.details !== undefined) payload.details = appError.details;
-
-    if (!(err instanceof AppError)) {
-        console.error('Error desconocido:', err);
-    }
-
-    return res.status(appError.statusCode).json(payload);
+export function notFound(req: Request, _res: Response, next: NextFunction) {
+  next(new AppError(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, 404, 'ROUTE_NOT_FOUND'));
+}
+export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      code: err.code,
+      message: err.message,
+      ...(process.env.NODE_ENV === 'development' && { details: err.details, stack: err.stack }),
+    });
+  }
+  // Error no controlado
+  console.error('❌ Error no controlado:', err);
+  return res.status(500).json({
+    success: false,
+    code: 'INTERNAL_ERROR',
+    message: process.env.NODE_ENV === 'production'
+      ? 'Error interno del servidor'
+      : err.message,
+  });
 }
