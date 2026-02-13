@@ -3,7 +3,7 @@ import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import env from '../config/env.js';
-import type { LoginInput } from '../validations/auth.schemas.js';
+import type { LoginRequestDto } from '../dtos/auth.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
 /**
@@ -23,7 +23,7 @@ export class AuthService {
      * @param loginData - Credenciales validadas por Zod (futuro: LoginDto)
      * @throws Error con código 'INVALID_CREDENTIALS' si las credenciales son incorrectas
      */
-    async login(loginData: LoginInput): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
+    async login(loginData: LoginRequestDto): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
         const { email, password } = loginData;
 
         // REGLA DE NEGOCIO: Usuario debe existir

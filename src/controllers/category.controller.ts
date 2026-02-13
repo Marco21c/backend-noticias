@@ -1,11 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
 import { CategoryService } from '../services/category.services.js';
 import { AppError } from '../errors/AppError.js';
-import type { 
-    CreateCategoryInput, 
-    UpdateCategoryInput, 
-    CategoryIdParam 
-} from '../validations/category.schemas.js';
+import type {
+    CreateCategoryRequestDto,
+    UpdateCategoryRequestDto,
+    CategoryIdRequestDto
+} from '../dtos/category.dto.js';
+import { toCategoryResponseDto } from '../dtos/category.dto.js';
+import { successResponse } from '../dtos/response.dto.js';
 
 /**
  * CategoryController - Capa de presentación/API
@@ -27,18 +29,19 @@ export class CategoryController {
 
     async getCategories(_req: Request, res: Response): Promise<Response> {
         const categories = await this.categoryService.getAllCategories();
-        return res.status(200).json(categories);
+        const payload = categories.map(toCategoryResponseDto);
+        return res.status(200).json(successResponse(payload));
     }
 
     async createCategory(req: Request, res: Response): Promise<Response> {
-        const categoryData = res.locals.validated.body as CreateCategoryInput;
+        const categoryData = res.locals.validated.body as CreateCategoryRequestDto;
 
         try {
             const created = await this.categoryService.createCategory(categoryData);
-            return res.status(201).json({ 
-                message: 'Categoría creada correctamente', 
-                data: created 
-            });
+            const payload = toCategoryResponseDto(created);
+            return res
+                .status(201)
+                .json(successResponse(payload, 'Categoría creada correctamente'));
         } catch (error: any) {
             // Mapeo de errores de negocio a HTTP
             if (error?.message === 'NAME_DUPLICATE') {
@@ -49,19 +52,19 @@ export class CategoryController {
     }
 
     async getCategoryById(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as CategoryIdParam;
+        const { id } = res.locals.validated.params as CategoryIdRequestDto;
 
         const category = await this.categoryService.getCategoryById(id);
         if (!category) {
             throw new AppError('Categoría no encontrada', 404, 'CATEGORY_NOT_FOUND');
         }
 
-        return res.status(200).json(category);
+        return res.status(200).json(successResponse(toCategoryResponseDto(category)));
     }
 
     async editCategory(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as CategoryIdParam;
-        const categoryData = res.locals.validated.body as UpdateCategoryInput;
+        const { id } = res.locals.validated.params as CategoryIdRequestDto;
+        const categoryData = res.locals.validated.body as UpdateCategoryRequestDto;
 
         try {
             const edited = await this.categoryService.updateCategory(id, categoryData);
@@ -69,10 +72,10 @@ export class CategoryController {
                 throw new AppError('Categoría no encontrada', 404, 'CATEGORY_NOT_FOUND');
             }
 
-            return res.status(200).json({ 
-                message: 'Categoría editada correctamente', 
-                data: edited 
-            });
+            const payload = toCategoryResponseDto(edited);
+            return res
+                .status(200)
+                .json(successResponse(payload, 'Categoría editada correctamente'));
         } catch (error: any) {
             // Mapeo de errores de negocio a HTTP
             if (error?.message === 'NAME_DUPLICATE') {
@@ -83,17 +86,17 @@ export class CategoryController {
     }
 
     async deleteCategory(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as CategoryIdParam;
+        const { id } = res.locals.validated.params as CategoryIdRequestDto;
 
         const deleted = await this.categoryService.deleteCategory(id);
         if (!deleted) {
             throw new AppError('Categoría no encontrada', 404, 'CATEGORY_NOT_FOUND');
         }
 
-        return res.status(200).json({ 
-            message: 'Categoría eliminada correctamente', 
-            data: deleted 
-        });
+        const payload = toCategoryResponseDto(deleted);
+        return res
+            .status(200)
+            .json(successResponse(payload, 'Categoría eliminada correctamente'));
     }
 }
 

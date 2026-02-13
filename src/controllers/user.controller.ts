@@ -1,12 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import { UserService } from '../services/user.services.js';
 import { AppError } from '../errors/AppError.js';
-import type { 
-    CreateUserInput, 
-    UpdateUserInput, 
-    UserIdParam,
-    UserEmailQuery 
-} from '../validations/user.schemas.js';
+import type {
+    CreateUserRequestDto,
+    UpdateUserRequestDto,
+    UserIdRequestDto,
+    UserEmailRequestDto
+} from '../dtos/user.dto.js';
+import { toUserResponseDto } from '../dtos/user.dto.js';
+import { successResponse } from '../dtos/response.dto.js';
 
 /**
  * UserController - Capa de presentación/API
@@ -29,18 +31,19 @@ export class UserController {
 
     async getUsers(_req: Request, res: Response): Promise<Response> {
         const users = await this.userService.getAllUsers();
-        return res.status(200).json(users);
+        const payload = users.map(toUserResponseDto);
+        return res.status(200).json(successResponse(payload));
     }
 
     async createUser(req: Request, res: Response): Promise<Response> {
-        const userData = res.locals.validated.body as CreateUserInput;
+        const userData = res.locals.validated.body as CreateUserRequestDto;
 
         try {
             const newUser = await this.userService.createUser(userData);
-            return res.status(201).json({ 
-                message: 'Usuario creado correctamente', 
-                data: newUser 
-            });
+            const payload = toUserResponseDto(newUser);
+            return res
+                .status(201)
+                .json(successResponse(payload, 'Usuario creado correctamente'));
         } catch (error: any) {
             // Mapeo de errores de negocio a HTTP
             if (error?.message === 'FORBIDDEN_ROLE') {
@@ -58,30 +61,30 @@ export class UserController {
     }
 
     async getUserById(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as UserIdParam;
+        const { id } = res.locals.validated.params as UserIdRequestDto;
         
         const user = await this.userService.getUserById(id);
         if (!user) {
             throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
         }
 
-        return res.status(200).json(user);
+        return res.status(200).json(successResponse(toUserResponseDto(user)));
     }
 
     async getUserByEmail(req: Request, res: Response): Promise<Response> {
-        const { email } = res.locals.validated.query as UserEmailQuery;
+        const { email } = res.locals.validated.query as UserEmailRequestDto;
         
         const user = await this.userService.getUserByEmail(email);
         if (!user) {
             throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
         }
 
-        return res.status(200).json(user);
+        return res.status(200).json(successResponse(toUserResponseDto(user)));
     }
 
     async editUser(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as UserIdParam;
-        const userData = res.locals.validated.body as UpdateUserInput;
+        const { id } = res.locals.validated.params as UserIdRequestDto;
+        const userData = res.locals.validated.body as UpdateUserRequestDto;
 
         try {
             const edited = await this.userService.updateUser(id, userData);
@@ -89,10 +92,10 @@ export class UserController {
                 throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
             }
 
-            return res.status(200).json({ 
-                message: 'Usuario editado correctamente', 
-                data: edited 
-            });
+            const payload = toUserResponseDto(edited);
+            return res
+                .status(200)
+                .json(successResponse(payload, 'Usuario editado correctamente'));
         } catch (error: any) {
             // Mapeo de errores de negocio a HTTP
             if (error?.message === 'FORBIDDEN_ROLE') {
@@ -110,17 +113,17 @@ export class UserController {
     }
 
     async deleteUser(req: Request, res: Response): Promise<Response> {
-        const { id } = res.locals.validated.params as UserIdParam;
+        const { id } = res.locals.validated.params as UserIdRequestDto;
         
         const deletedUser = await this.userService.deleteUser(id);
         if (!deletedUser) {
             throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
         }
 
-        return res.status(200).json({ 
-            message: 'Usuario eliminado correctamente', 
-            data: deletedUser 
-        });
+        const payload = toUserResponseDto(deletedUser);
+        return res
+            .status(200)
+            .json(successResponse(payload, 'Usuario eliminado correctamente'));
     }
 }
 

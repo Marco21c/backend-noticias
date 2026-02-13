@@ -2,7 +2,11 @@ import type { INews } from '../interfaces/news.interface.js';
 import { NewsRepository } from '../repositories/news.repository.js';
 import { Types } from 'mongoose';
 import { cleanUndefined } from '../helpers/cleanUndefined.js';
-import type { CreateNewsInput, UpdateNewsInput, NewsQuery } from '../validations/news.schemas.js';
+import type {
+  CreateNewsRequestDto,
+  UpdateNewsRequestDto,
+  NewsQueryRequestDto
+} from '../dtos/news.dto.js';
 
 export class NewsService {
   private newsRepository: NewsRepository;
@@ -15,7 +19,7 @@ export class NewsService {
    * Obtener todas las noticias con filtros opcionales
    * @param filters - Query params validados (futuro: NewsQueryDto)
    */
-  async getAllNews(filters?: NewsQuery): Promise<INews[]> {
+  async getAllNews(filters?: NewsQueryRequestDto): Promise<INews[]> {
     const query: any = {};
 
     if (filters?.status) {
@@ -39,7 +43,7 @@ export class NewsService {
    * @param authorId - ID del autor autenticado
    */
   async createNews(
-    newsData: CreateNewsInput,
+    newsData: CreateNewsRequestDto,
     authorId: Types.ObjectId
   ): Promise<INews> {
     const newsToCreate = cleanUndefined({
@@ -71,7 +75,7 @@ export class NewsService {
    * @param id - ID de la noticia
    * @param newsData - Datos a actualizar (futuro: UpdateNewsDto)
    */
-  async editNews(id: string, newsData: UpdateNewsInput): Promise<INews | null> {
+  async editNews(id: string, newsData: UpdateNewsRequestDto): Promise<INews | null> {
     const cleanedData = cleanUndefined(newsData) as Partial<INews>;
     return this.newsRepository.update(id, cleanedData);
   }

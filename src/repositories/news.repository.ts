@@ -12,8 +12,8 @@ export class NewsRepository {
 	 */
 	async findAll(query: any = {}): Promise<INews[]> {
 		return NewsModel.find(query)
-			.populate('category', 'name -_id')
-			.populate('author', 'name -_id')
+			.populate('category', 'name')
+			.populate('author', 'name')
 			.exec();
 	}
 
@@ -22,8 +22,8 @@ export class NewsRepository {
 	 */
 	async findById(id: string): Promise<INews | null> {
 		return NewsModel.findById(id)
-			.populate('category', 'name -_id')
-			.populate('author', 'name -_id')
+			.populate('category', 'name')
+			.populate('author', 'name')
 			.exec();
 	}
 
@@ -32,8 +32,8 @@ export class NewsRepository {
 	 */
 	async findByCategory(category: string): Promise<INews[]> {
 		return NewsModel.find({ category })
-			.populate('category', 'name -_id')
-			.populate('author', 'name -_id')
+			.populate('category', 'name')
+			.populate('author', 'name')
 			.exec();
 	}
 
@@ -50,8 +50,8 @@ export class NewsRepository {
 	 */
 	async update(id: string, newsData: Partial<INews>): Promise<INews | null> {
 		return NewsModel.findByIdAndUpdate(id, newsData, { new: true })
-			.populate('category', 'name -_id')
-			.populate('author', 'name -_id')
+			.populate('category', 'name')
+			.populate('author', 'name')
 			.exec();
 	}
 
