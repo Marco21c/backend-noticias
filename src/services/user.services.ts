@@ -1,7 +1,7 @@
 import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
-import type { CreateUserInput, UpdateUserInput } from '../validations/user.schemas.js';
+import type { CreateUserRequestDto, UpdateUserRequestDto } from '../dtos/user.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
 /**
@@ -42,7 +42,7 @@ export class UserService {
      * @param userData - Datos validados por Zod (futuro: CreateUserDto)
      * Aplica reglas de negocio: bloqueo de superadmin, email único, hasheo
      */
-    async createUser(userData: CreateUserInput): Promise<IUser> {
+    async createUser(userData: CreateUserRequestDto): Promise<IUser> {
         const { password, role, email, ...rest } = userData;
 
         // REGLA DE NEGOCIO: Email único
@@ -72,7 +72,7 @@ export class UserService {
      * @param updateData - Datos validados por Zod (futuro: UpdateUserDto)
      * Aplica reglas de negocio: bloqueo de superadmin, email único
      */
-    async updateUser(id: string, updateData: UpdateUserInput): Promise<IUser | null> {
+    async updateUser(id: string, updateData: UpdateUserRequestDto): Promise<IUser | null> {
         const { password, role, email, ...rest } = updateData;
 
         const dataToUpdate: any = { ...rest };

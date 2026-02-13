@@ -1,6 +1,6 @@
 import type { ICategory } from '../interfaces/category.interface.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
-import type { CreateCategoryInput, UpdateCategoryInput } from '../validations/category.schemas.js';
+import type { CreateCategoryRequestDto, UpdateCategoryRequestDto } from '../dtos/category.dto.js';
 import { cleanUndefined } from '../helpers/cleanUndefined.js';
 /**
  * CategoryService - Capa de lógica de negocio para Categories
@@ -32,7 +32,7 @@ export class CategoryService {
      * Crear una nueva categoría
      * @param categoryData - Datos validados por Zod (futuro: CreateCategoryDto)
      */
-    async createCategory(categoryData: CreateCategoryInput): Promise<ICategory> {
+    async createCategory(categoryData: CreateCategoryRequestDto): Promise<ICategory> {
         const { name, description, isActive } = categoryData;
 
         // REGLA DE NEGOCIO: Nombre único
@@ -53,7 +53,7 @@ export class CategoryService {
      * @param id - ID de la categoría a actualizar
      * @param categoryData - Datos validados por Zod (futuro: UpdateCategoryDto)
      */
-    async updateCategory(id: string, categoryData: UpdateCategoryInput): Promise<ICategory | null> {
+    async updateCategory(id: string, categoryData: UpdateCategoryRequestDto): Promise<ICategory | null> {
         // REGLA DE NEGOCIO: Nombre único (si se está actualizando)
         if (categoryData.name) {
             const existing = await this.categoryRepository.findByName(categoryData.name);
