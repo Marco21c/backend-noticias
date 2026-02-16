@@ -5,7 +5,7 @@ import './src/config/database.js';
 import mainRouter from './src/routes/main.routes.js';
 import env from './src/config/env.js';
 import { initializeSystem } from './src/config/initialSetup.js';
-import { notFound, errorHandler } from './src/middlewares/error.middleware.ts';
+import { notFound, errorHandler } from './src/middlewares/error.middleware.js';
 
 
 const app = express();
