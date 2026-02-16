@@ -5,7 +5,7 @@ import './src/config/database.js';
 import mainRouter from './src/routes/main.routes.js';
 import env from './src/config/env.js';
 import { initializeSystem } from './src/config/initialSetup.js';
-import { notFound, errorHandler } from './src/middlewares/error.middleware.ts';
+import { notFound, errorHandler } from './src/middlewares/error.middleware.js';
 
 
 const app = express();
@@ -32,8 +32,8 @@ async function startServer() {
   }
 
   app.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Entorno: ${process.env.NODE_ENV}`);
   });
 }
 

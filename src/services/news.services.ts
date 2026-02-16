@@ -8,16 +8,35 @@ import type {
   NewsQueryRequestDto
 } from '../dtos/news.dto.js';
 
+/**
+ * Servicio para la gestión de noticias.
+ * Contiene la lógica de negocio y orquesta las operaciones con el repositorio.
+ *
+ * @example
+ * ```typescript
+ * const newsService = new NewsService();
+ * const news = await newsService.createNews(data, authorId);
+ * ```
+ */
 export class NewsService {
   private newsRepository: NewsRepository;
 
+  /**
+   * Crea una instancia del servicio de noticias.
+   *
+   * @param newsRepository - Repositorio opcional para inyección de dependencias
+   */
   constructor(newsRepository?: NewsRepository) {
     this.newsRepository = newsRepository || new NewsRepository();
   }
 
   /**
-   * Obtener todas las noticias con filtros opcionales
-   * @param filters - Query params validados (futuro: NewsQueryDto)
+   * Obtiene todas las noticias aplicando filtros opcionales.
+   *
+   * @param filters - Filtros opcionales para la consulta
+   * @param filters.status - Filtrar por estado de la noticia
+   * @param filters.author - Filtrar por ID del autor
+   * @returns Array de noticias que cumplen los filtros
    */
   async getAllNews(filters?: NewsQueryRequestDto): Promise<INews[]> {
     const query: any = {};
@@ -38,9 +57,11 @@ export class NewsService {
   }
 
   /**
-   * Crear una nueva noticia
-   * @param newsData - Datos validados (futuro: CreateNewsDto)
-   * @param authorId - ID del autor autenticado
+   * Crea una nueva noticia en estado borrador.
+   *
+   * @param newsData - Datos validados de la noticia
+   * @param authorId - ID del usuario autor autenticado
+   * @returns Noticia creada con ID asignado
    */
   async createNews(
     newsData: CreateNewsRequestDto,
@@ -57,23 +78,31 @@ export class NewsService {
   }
 
   /**
-   * Obtener noticia por ID
+   * Obtiene una noticia específica por su ID.
+   *
+   * @param id - ID de la noticia a buscar
+   * @returns Noticia encontrada o null si no existe
    */
   async getNewsById(id: string): Promise<INews | null> {
     return this.newsRepository.findById(id);
   }
 
   /**
-   * Obtener noticias por categoría
+   * Obtiene todas las noticias de una categoría específica.
+   *
+   * @param category - ID de la categoría
+   * @returns Array de noticias de la categoría
    */
   async getNewsByCategory(category: string): Promise<INews[]> {
     return this.newsRepository.findByCategory(category);
   }
 
   /**
-   * Editar una noticia existente
-   * @param id - ID de la noticia
-   * @param newsData - Datos a actualizar (futuro: UpdateNewsDto)
+   * Actualiza una noticia existente.
+   *
+   * @param id - ID de la noticia a actualizar
+   * @param newsData - Datos a actualizar
+   * @returns Noticia actualizada o null si no existe
    */
   async editNews(id: string, newsData: UpdateNewsRequestDto): Promise<INews | null> {
     const cleanedData = cleanUndefined(newsData) as Partial<INews>;
@@ -81,7 +110,10 @@ export class NewsService {
   }
 
   /**
-   * Eliminar una noticia
+   * Elimina una noticia del sistema.
+   *
+   * @param id - ID de la noticia a eliminar
+   * @returns Noticia eliminada o null si no existe
    */
   async deleteNews(id: string): Promise<INews | null> {
     return this.newsRepository.delete(id);
