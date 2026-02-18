@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import type { INewsletter } from '../interfaces/newsletter.interface.js';
 import type {
 	SubscribeInput,
@@ -7,14 +8,28 @@ import type {
 	NewsletterCategoryParam,
 } from '../validations/newsletter.schemas.js';
 
-// Request DTOs (alias de tipos Zod)
+type PopulatedCategory = {
+	_id: Types.ObjectId | string;
+	name: string;
+};
+
+type NewsletterPlainObject = {
+	_id?: Types.ObjectId | string;
+	user: Types.ObjectId | string;
+	email: string;
+	name: string;
+	preferredCategories?: (Types.ObjectId | string | PopulatedCategory)[];
+	isActive: boolean;
+	createdAt?: Date;
+	updatedAt?: Date;
+};
+
 export type SubscribeRequestDto = SubscribeInput;
 export type UpdatePreferencesRequestDto = UpdatePreferencesInput;
 export type NewsletterIdRequestDto = NewsletterIdParam;
 export type NewsletterEmailRequestDto = NewsletterEmailParam;
 export type NewsletterCategoryRequestDto = NewsletterCategoryParam;
 
-// Response DTOs
 export type NewsletterResponseDto = {
 	id: string;
 	user: string;
@@ -38,46 +53,75 @@ export type NewsletterSubscriberDto = {
 	createdAt?: Date;
 };
 
-function normalizeId(id: unknown): string {
-	return id ? String(id) : '';
+function normalizeId(id: Types.ObjectId | string | undefined): string {
+	if (!id) return '';
+	return id instanceof Types.ObjectId ? id.toString() : String(id);
 }
 
-export function toNewsletterResponseDto(newsletter: INewsletter | any): NewsletterResponseDto {
-	const obj = newsletter?.toObject ? newsletter.toObject() : newsletter;
+function toPlainObject(
+	newsletter: INewsletter | { toObject: () => NewsletterPlainObject }
+): NewsletterPlainObject {
+	if ('toObject' in newsletter) {
+		return newsletter.toObject();
+	}
+	return newsletter as NewsletterPlainObject;
+}
 
-	return {
-		id: normalizeId(obj._id ?? obj.id),
+export function toNewsletterResponseDto(
+	newsletter: INewsletter | { toObject: () => NewsletterPlainObject }
+): NewsletterResponseDto {
+	const obj = toPlainObject(newsletter);
+
+	const response: NewsletterResponseDto = {
+		id: normalizeId(obj._id),
 		user: normalizeId(obj.user),
 		email: obj.email,
 		name: obj.name,
 		preferredCategories: Array.isArray(obj.preferredCategories)
-			? obj.preferredCategories.map((cat: any) =>
-					typeof cat === 'string' ? cat : normalizeId(cat._id ?? cat.id)
-			  )
+			? obj.preferredCategories.map((cat) => {
+					if (typeof cat === 'string') return cat;
+					if (cat instanceof Types.ObjectId) return cat.toString();
+					return normalizeId(cat._id);
+				})
 			: [],
 		isActive: obj.isActive ?? true,
-		createdAt: obj.createdAt,
-		updatedAt: obj.updatedAt,
 	};
+
+	if (obj.createdAt) response.createdAt = obj.createdAt;
+	if (obj.updatedAt) response.updatedAt = obj.updatedAt;
+
+	return response;
 }
 
-export function toNewsletterSubscriberDto(newsletter: INewsletter | any): NewsletterSubscriberDto {
-	const obj = newsletter?.toObject ? newsletter.toObject() : newsletter;
+export function toNewsletterSubscriberDto(
+	newsletter: INewsletter | { toObject: () => NewsletterPlainObject }
+): NewsletterSubscriberDto {
+	const obj = toPlainObject(newsletter);
 
-	// Procesar categorías populadas
 	const categories = Array.isArray(obj.preferredCategories)
-		? obj.preferredCategories.map((cat: any) => ({
-				id: typeof cat === 'string' ? cat : normalizeId(cat._id ?? cat.id),
-				name: typeof cat === 'string' ? '' : cat.name ?? '',
-		  }))
+		? obj.preferredCategories.map((cat) => {
+				if (typeof cat === 'string') {
+					return { id: cat, name: '' };
+				}
+				if (cat instanceof Types.ObjectId) {
+					return { id: cat.toString(), name: '' };
+				}
+				return {
+					id: normalizeId(cat._id),
+					name: cat.name ?? '',
+				};
+			})
 		: [];
 
-	return {
-		id: normalizeId(obj._id ?? obj.id),
+	const response: NewsletterSubscriberDto = {
+		id: normalizeId(obj._id),
 		email: obj.email,
 		name: obj.name,
 		preferredCategories: categories,
 		isActive: obj.isActive ?? true,
-		createdAt: obj.createdAt,
 	};
+
+	if (obj.createdAt) response.createdAt = obj.createdAt;
+
+	return response;
 }
