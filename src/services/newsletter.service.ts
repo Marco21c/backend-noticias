@@ -154,9 +154,7 @@ export class NewsletterService {
 	 * Solo para admin/superadmin
 	 */
 	async getSubscriberById(id: string): Promise<INewsletter | null> {
-		// Aquí necesitaríamos agregar un método findById al repository
-		// Por ahora usamos findByUserId como workaround
-		return await this.repository.findByUserId(id);
+		return await this.repository.findById(id);
 	}
 
 	/**
