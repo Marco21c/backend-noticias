@@ -241,11 +241,11 @@ Authorization: Bearer <token>
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
-| `email` | String | ✅ | Email único |
-| `password` | String | ✅ | Contraseña encriptada |
-| `name` | String | ✅ | Nombre |
-| `lastName` | String | ✅ | Apellido |
-| `role` | Enum | ✅ | superadmin, admin, editor, user |
+| `email` | String | Sí | Email único |
+| `password` | String | Sí | Contraseña encriptada |
+| `name` | String | Sí | Nombre |
+| `lastName` | String | Sí | Apellido |
+| `role` | Enum | Sí | superadmin, admin, editor, user |
 | `createdAt` | Date | Auto | Fecha de creación |
 | `updatedAt` | Date | Auto | Fecha de actualización |
 
@@ -253,18 +253,18 @@ Authorization: Bearer <token>
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
-| `title` | String | ✅ | Título de la noticia |
-| `slug` | String | ✅ | URL amigable (único) |
-| `summary` | String | ✅ | Resumen breve |
-| `content` | String | ✅ | Contenido completo |
-| `highlights` | String[] | ❌ | Puntos destacados |
+| `title` | String | Sí | Título de la noticia |
+| `slug` | String | Sí | URL amigable (único) |
+| `summary` | String | Sí | Resumen breve |
+| `content` | String | Sí | Contenido completo |
+| `highlights` | String[] | No | Puntos destacados |
 | `author` | ObjectId | Auto | Referencia al usuario |
-| `category` | Enum | ✅ | Categoría |
-| `variant` | Enum | ✅ | highlighted, featured, default |
-| `status` | Enum | ❌ | draft, published |
-| `mainImage` | String | ❌ | URL de imagen |
-| `source` | String | ❌ | Fuente |
-| `publicationDate` | Date | ❌ | Fecha de publicación |
+| `category` | Enum | Sí | Categoría |
+| `variant` | Enum | Sí | highlighted, featured, default |
+| `status` | Enum | No | draft, published |
+| `mainImage` | String | No | URL de imagen |
+| `source` | String | No | Fuente |
+| `publicationDate` | Date | No | Fecha de publicación |
 
 ## Roles de Usuario
 
@@ -328,7 +328,6 @@ Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detall
 - **Marcos Condori** - Fullstack Developer - [GitHub](https://github.com/Marco21c) | [LinkedIn](https://www.linkedin.com/in/marcos-condori-23c/)
 - **Ezequiel Pacheco** - Scrum Master & Fullstack Developer - [GitHub](https://github.com/EzePacheco) | [LinkedIn](https://www.linkedin.com/in/ezepacheco-dev/)
 - **Andres Chaile** - Backend Developer - [GitHub](https://github.com/andres777c) | [LinkedIn](https://www.linkedin.com/in/andres-chaile-491a6127b/)
-- **Leonardo Alcedo** - Backend Developer - [GitHub](https://github.com/leo99902) | [LinkedIn](https://www.linkedin.com/in/leonardo-alcedo-45a83027b/)
 - **Yanina Paez** - Frontend Developer - [GitHub](https://github.com/Yani02-gif) | [LinkedIn](https://www.linkedin.com/in/yanina-paez-1100582bb)
 
 ---
