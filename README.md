@@ -13,6 +13,7 @@ Backend robusto para sistema de gestión de noticias que proporciona autenticaci
 - Gestión de usuarios con encriptación de contraseñas (bcrypt)
 - Sistema de inicialización de Superadmin
 - CRUD completo de noticias y usuarios
+- Sistema de suscripción a newsletter con preferencias por categoría
 - Filtrado por categoría, autor y estado
 - Validación de variables de entorno con Zod
 - Arquitectura modular (MVC pattern)
@@ -111,19 +112,27 @@ backend-noticias/
 │   │   └── env.ts       # Validación de entorno
 │   ├── controllers/     # Controladores
 │   │   ├── auth.controller.ts
+│   │   ├── category.controller.ts
+│   │   ├── newsletter.controller.ts
 │   │   ├── news.controller.ts
-│   │   └── users.controller.ts
+│   │   └── user.controller.ts
+│   ├── dtos/            # Data Transfer Objects
 │   ├── interfaces/      # Interfaces TypeScript
 │   ├── middlewares/     # Middlewares
-│   │   └── auth.middleware.ts
+│   │   ├── auth.middleware.ts
+│   │   └── validation.middleware.ts
 │   ├── models/          # Modelos Mongoose
+│   │   ├── category.model.ts
+│   │   ├── newsletter.model.ts
 │   │   ├── news.model.ts
 │   │   └── user.model.ts
+│   ├── repositories/    # Capa de acceso a datos
 │   ├── routes/          # Rutas de la API
 │   ├── scripts/         # Scripts de utilidad
 │   │   ├── createSuperAdmin.ts
 │   │   └── deleteSuperAdmin.ts
-│   └── services/        # Lógica de negocio
+│   ├── services/        # Lógica de negocio
+│   └── validations/     # Schemas de validación Zod
 ├── dist/                # Código compilado
 └── index.ts             # Punto de entrada
 ```
@@ -235,6 +244,70 @@ DELETE /api/users/:id
 Authorization: Bearer <token>
 ```
 
+### Newsletter
+
+Sistema de suscripción a newsletter con selección de categorías preferidas (máximo 3).
+
+#### Suscribirse al newsletter
+```http
+POST /api/newsletter/subscribe
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "preferredCategories": ["categoryId1", "categoryId2", "categoryId3"]
+}
+```
+
+#### Actualizar preferencias de categorías
+```http
+PUT /api/newsletter/preferences
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "preferredCategories": ["categoryId1", "categoryId2"]
+}
+```
+
+#### Desuscribirse del newsletter
+```http
+DELETE /api/newsletter/unsubscribe
+Authorization: Bearer <token>
+```
+
+#### Obtener mi suscripción
+```http
+GET /api/newsletter/my-subscription
+Authorization: Bearer <token>
+```
+
+### Newsletter Admin (solo Admin/Superadmin)
+
+#### Listar todos los suscriptores activos
+```http
+GET /api/newsletter/admin/subscribers
+Authorization: Bearer <token>
+```
+
+#### Buscar suscriptor por ID
+```http
+GET /api/newsletter/admin/subscribers/:id
+Authorization: Bearer <token>
+```
+
+#### Buscar suscriptor por email
+```http
+GET /api/newsletter/admin/subscribers/email/:email
+Authorization: Bearer <token>
+```
+
+#### Listar suscriptores por categoría
+```http
+GET /api/newsletter/admin/subscribers/category/:categoryId
+Authorization: Bearer <token>
+```
+
 ## Modelo de Datos
 
 ### Usuario
@@ -266,14 +339,26 @@ Authorization: Bearer <token>
 | `source` | String | No | Fuente |
 | `publicationDate` | Date | No | Fecha de publicación |
 
+### Newsletter
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `user` | ObjectId | ✅ | Referencia al usuario (único) |
+| `email` | String | ✅ | Email del suscriptor |
+| `name` | String | ✅ | Nombre completo |
+| `preferredCategories` | ObjectId[] | ❌ | Categorías seleccionadas (máx 3) |
+| `isActive` | Boolean | ✅ | Estado de suscripción |
+| `createdAt` | Date | Auto | Fecha de suscripción |
+| `updatedAt` | Date | Auto | Fecha de actualización |
+
 ## Roles de Usuario
 
 El sistema implementa cuatro niveles de acceso:
 
-- **Superadmin**: Acceso completo, incluyendo gestión de usuarios
-- **Admin**: Gestión completa de noticias
-- **Editor**: Creación y edición de noticias
-- **User**: Solo lectura
+- **Superadmin**: Acceso completo, incluyendo gestión de usuarios y administración completa del newsletter
+- **Admin**: Gestión completa de noticias y administración del newsletter (listar suscriptores, buscar por email/categoría)
+- **Editor**: Creación y edición de noticias, puede suscribirse al newsletter
+- **User**: Solo lectura, puede suscribirse al newsletter y gestionar sus preferencias
 
 ## Seguridad
 
