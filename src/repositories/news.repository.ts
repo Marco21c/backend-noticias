@@ -81,7 +81,7 @@ export class NewsRepository {
 	 * Buscar noticias por palabra clave usando índices de texto de MongoDB
 	 * @param keyword - Palabra clave a buscar (ya sanitizada)
 	 * @param options - Opciones de paginación
-	 * @returns Noticias ordenadas por relevancia con score
+	 * @returns Noticias ordenadas por fecha descendente y relevancia
 	 */
 	async searchByKeyword(
 		keyword: string,
@@ -97,7 +97,10 @@ export class NewsRepository {
 			{ $text: { $search: keyword } },
 			{ score: { $meta: 'textScore' } } // Agregar score de relevancia
 		)
-			.sort({ score: { $meta: 'textScore' } }) // Ordenar por relevancia
+			.sort({ 
+				publicationDate: -1,             // Primero por fecha descendente (más reciente)
+				score: { $meta: 'textScore' }   // Luego por relevancia
+			})
 			.skip(skip)
 			.limit(limit)
 			.populate('category', 'name')
