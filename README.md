@@ -344,12 +344,12 @@ Authorization: Bearer <token>
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
 | `user` | ObjectId | Sí | Referencia al usuario (único) |
-| `email` | String | Sí | Email del suscriptor |
-| `name` | String | Sí | Nombre completo |
 | `preferredCategories` | ObjectId[] | No | Categorías seleccionadas (máx 3) |
 | `isActive` | Boolean | Sí | Estado de suscripción |
 | `createdAt` | Date | Auto | Fecha de suscripción |
 | `updatedAt` | Date | Auto | Fecha de actualización |
+
+Nota: `email` y `name` se obtienen del usuario referenciado mediante populate.
 
 ## Roles de Usuario
 

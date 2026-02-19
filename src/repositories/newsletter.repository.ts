@@ -4,15 +4,17 @@ import type { Types } from 'mongoose';
 
 export class NewsletterRepository {
 	async findById(id: string | Types.ObjectId): Promise<INewsletter | null> {
-		return await Newsletter.findById(id).exec();
+		return await Newsletter.findById(id)
+			.populate('user', 'email name lastName')
+			.populate('preferredCategories', 'name')
+			.exec();
 	}
 
 	async findByUserId(userId: string | Types.ObjectId): Promise<INewsletter | null> {
-		return await Newsletter.findOne({ user: userId }).exec();
-	}
-
-	async findByEmail(email: string): Promise<INewsletter | null> {
-		return await Newsletter.findOne({ email: email.toLowerCase().trim() }).exec();
+		return await Newsletter.findOne({ user: userId })
+			.populate('user', 'email name lastName')
+			.populate('preferredCategories', 'name')
+			.exec();
 	}
 
 	async create(data: Partial<INewsletter>): Promise<INewsletter> {
@@ -28,7 +30,10 @@ export class NewsletterRepository {
 			{ user: userId },
 			{ $set: data },
 			{ new: true, runValidators: true }
-		).exec();
+		)
+			.populate('user', 'email name lastName')
+			.populate('preferredCategories', 'name')
+			.exec();
 	}
 
 	async unsubscribe(userId: string | Types.ObjectId): Promise<INewsletter | null> {
@@ -36,12 +41,14 @@ export class NewsletterRepository {
 			{ user: userId },
 			{ $set: { isActive: false } },
 			{ new: true }
-		).exec();
+		)
+			.populate('user', 'email name lastName')
+			.exec();
 	}
 
 	async findActiveSubscribers(): Promise<INewsletter[]> {
 		return await Newsletter.find({ isActive: true })
-			.populate('user', 'email name')
+			.populate('user', 'email name lastName')
 			.populate('preferredCategories', 'name')
 			.exec();
 	}
@@ -51,7 +58,8 @@ export class NewsletterRepository {
 			isActive: true,
 			preferredCategories: categoryId,
 		})
-			.populate('user', 'email name')
+			.populate('user', 'email name lastName')
+			.populate('preferredCategories', 'name')
 			.exec();
 	}
 }
