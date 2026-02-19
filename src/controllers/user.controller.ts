@@ -1,112 +1,130 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { UserService } from '../services/user.services.js';
+import { AppError } from '../errors/AppError.js';
+import type {
+    CreateUserRequestDto,
+    UpdateUserRequestDto,
+    UserIdRequestDto,
+    UserEmailRequestDto
+} from '../dtos/user.dto.js';
+import { toUserResponseDto } from '../dtos/user.dto.js';
+import { successResponse } from '../dtos/response.dto.js';
 
+/**
+ * UserController - Capa de presentación/API
+ * Responsabilidad: Orquestar requests/responses HTTP
+ * Confía en validaciones de Zod hechas en middleware
+ */
 export class UserController {
-	async getUsers(req: Request, res: Response): Promise<Response> {
-		try {
-			const users = await new UserService().getAllUsers();
-			return res.status(200).json(users);
-		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuarios', error });
-		}
-	}
+    private userService: UserService;
 
-	async createUser(req: Request, res: Response): Promise<Response> {
-		try {
-			const userData = req.body;
-			if (!userData || typeof userData.password !== 'string' || !userData.email) {
-				return res.status(400).json({ message: 'Datos de usuario inválidos' });
-			}
-			const newUser = await new UserService().createUser(userData);
-			return res.status(201).json({ message: 'Usuario creado correctamente', data: newUser });
-		} catch (error) {
-			const err: any = error;
-			if (err && err.message === 'EMAIL_DUPLICATE') {
-				return res.status(409).json({ message: 'El email ya existe' });
-			}
-			if (err && err.message === 'INVALID_EMAIL') {
-				return res.status(400).json({ message: 'Email inválido' });
-			}
-			if (err && err.message === 'INVALID_PASSWORD') {
-				return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });
-			}
-			return res.status(500).json({ message: 'Error al crear usuario', error });
-		}
-	}
+    constructor(userService?: UserService) {
+        this.userService = userService || new UserService();
 
-	async getUserById(req: Request, res: Response): Promise<Response> {
-		try {
-			const { id } = req.params;
-			if (!id || typeof id !== 'string') {
-				return res.status(400).json({ message: 'ID de usuario inválido' });
-			}
-			const user = await new UserService().getUserById(id);
-			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-			return res.status(200).json(user);
-		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuario', error });
-		}
-	}
+        this.getUsers = this.getUsers.bind(this);
+        this.createUser = this.createUser.bind(this);
+        this.getUserById = this.getUserById.bind(this);
+        this.getUserByEmail = this.getUserByEmail.bind(this);
+        this.editUser = this.editUser.bind(this);
+        this.deleteUser = this.deleteUser.bind(this);
+    }
 
-	async getUserByEmail(req: Request, res: Response): Promise<Response> {
-		try {
-			const email = req.query.email;
-			if (!email || typeof email !== 'string') {
-				return res.status(400).json({ message: 'Email inválido' });
-			}
-			const user = await new UserService().getUserByEmail(email);
-			if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-			return res.status(200).json(user);
-		} catch (error) {
-			return res.status(500).json({ message: 'Error al obtener usuario', error });
-		}
-	}
+    async getUsers(_req: Request, res: Response): Promise<Response> {
+        const users = await this.userService.getAllUsers();
+        const payload = users.map(toUserResponseDto);
+        return res.status(200).json(successResponse(payload));
+    }
 
-	async editUser(req: Request, res: Response): Promise<Response> {
-		try {
-			const idFromParams = req.params.id;
-			let id: string | undefined = undefined;
+    async createUser(req: Request, res: Response): Promise<Response> {
+        const userData = res.locals.validated.body as CreateUserRequestDto;
 
-			if (idFromParams && typeof idFromParams === 'string') {
-				id = idFromParams;
-			} else if (req.query && typeof req.query._id === 'string') {
-				id = req.query._id;
-			} else if (req.query && Array.isArray(req.query._id) && typeof req.query._id[0] === 'string') {
-				id = req.query._id[0];
-			}
+        try {
+            const newUser = await this.userService.createUser(userData);
+            const payload = toUserResponseDto(newUser);
+            return res
+                .status(201)
+                .json(successResponse(payload, 'Usuario creado correctamente'));
+        } catch (error: any) {
+            // Mapeo de errores de negocio a HTTP
+            if (error?.message === 'FORBIDDEN_ROLE') {
+                throw new AppError(
+                    'No se puede crear usuarios con rol superadmin',
+                    403,
+                    'FORBIDDEN_ROLE'
+                );
+            }
+            if (error?.message === 'EMAIL_DUPLICATE') {
+                throw new AppError('El email ya existe', 409, 'EMAIL_DUPLICATE');
+            }
+            throw error;
+        }
+    }
 
-			const userData = req.body;
-			if (!id) return res.status(400).json({ message: 'ID de usuario inválido' });
+    async getUserById(req: Request, res: Response): Promise<Response> {
+        const { id } = res.locals.validated.params as UserIdRequestDto;
+        
+        const user = await this.userService.getUserById(id);
+        if (!user) {
+            throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
+        }
 
-			try {
-				const edited = await new UserService().updateUser(id, userData);
-				if (!edited) return res.status(404).json({ message: 'Usuario no encontrado' });
+        return res.status(200).json(successResponse(toUserResponseDto(user)));
+    }
 
-				return res.status(200).json({ message: 'Usuario editado correctamente', data: edited });
-			} catch (err: any) {
-				if (err && err.message === 'EMAIL_DUPLICATE') return res.status(409).json({ message: 'El email ya existe' });
-				if (err && err.message === 'INVALID_EMAIL') return res.status(400).json({ message: 'Email inválido' });
-				if (err && err.message === 'INVALID_PASSWORD') return res.status(400).json({ message: 'Contraseña inválida: mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial' });
-				throw err;
-			}
-		} catch (error) {
-			return res.status(500).json({ message: 'Error al editar usuario', error });
-		}
-	}
+    async getUserByEmail(req: Request, res: Response): Promise<Response> {
+        const { email } = res.locals.validated.query as UserEmailRequestDto;
+        
+        const user = await this.userService.getUserByEmail(email);
+        if (!user) {
+            throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
+        }
 
-	async deleteUser(req: Request, res: Response): Promise<Response> {
-		try {
-			const { id } = req.params;
-			if (!id || typeof id !== 'string') {
-				return res.status(400).json({ message: 'ID de usuario inválido' });
-			}
-			const deletedUser = await new UserService().deleteUser(id);
-			if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
-			return res.status(200).json({ message: 'Usuario eliminado correctamente', data: deletedUser });
-		} catch (error) {
-			return res.status(500).json({ message: 'Error al eliminar usuario', error });
-		}
-	}
+        return res.status(200).json(successResponse(toUserResponseDto(user)));
+    }
+
+    async editUser(req: Request, res: Response): Promise<Response> {
+        const { id } = res.locals.validated.params as UserIdRequestDto;
+        const userData = res.locals.validated.body as UpdateUserRequestDto;
+
+        try {
+            const edited = await this.userService.updateUser(id, userData);
+            if (!edited) {
+                throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
+            }
+
+            const payload = toUserResponseDto(edited);
+            return res
+                .status(200)
+                .json(successResponse(payload, 'Usuario editado correctamente'));
+        } catch (error: any) {
+            // Mapeo de errores de negocio a HTTP
+            if (error?.message === 'FORBIDDEN_ROLE') {
+                throw new AppError(
+                    'No se puede asignar rol superadmin', 
+                    403, 
+                    'FORBIDDEN_ROLE'
+                );
+            }
+            if (error?.message === 'EMAIL_DUPLICATE') {
+                throw new AppError('El email ya existe', 409, 'EMAIL_DUPLICATE');
+            }
+            throw error;
+        }
+    }
+
+    async deleteUser(req: Request, res: Response): Promise<Response> {
+        const { id } = res.locals.validated.params as UserIdRequestDto;
+        
+        const deletedUser = await this.userService.deleteUser(id);
+        if (!deletedUser) {
+            throw new AppError('Usuario no encontrado', 404, 'USER_NOT_FOUND');
+        }
+
+        const payload = toUserResponseDto(deletedUser);
+        return res
+            .status(200)
+            .json(successResponse(payload, 'Usuario eliminado correctamente'));
+    }
 }
 
 export const userController = new UserController();

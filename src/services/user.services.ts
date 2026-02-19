@@ -1,87 +1,124 @@
 import type { IUser } from '../interfaces/user.interface.js';
-import UserModel from '../models/user.model.js';
+import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
+import type { CreateUserRequestDto, UpdateUserRequestDto } from '../dtos/user.dto.js';
+import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
+/**
+ * UserService - Capa de lógica de negocio para Users
+ * Responsabilidad: Reglas de negocio, transformaciones, operaciones complejas
+ * NO valida formatos (eso lo hace Zod en el middleware)
+ */
 export class UserService {
+    private userRepository: UserRepository;
 
-    
-	async getAllUsers(): Promise<IUser[]> {
-		return UserModel.find().select('-password').exec();
-	}
+    constructor(userRepository?: UserRepository) {
+        this.userRepository = userRepository || new UserRepository();
+    }
 
-	async getUserById(id: string): Promise<IUser | null> {
-		return UserModel.findById(id).select('-password').exec();
-	}
+    /**
+     * Obtener todos los usuarios (sin password)
+     */
+    async getAllUsers(): Promise<IUser[]> {
+        return this.userRepository.findAll('-password');
+    }
 
-	async getUserByEmail(email: string): Promise<IUser | null> {
-		return UserModel.findOne({ email }).exec();
-	}
+    /**
+     * Obtener usuario por ID (sin password)
+     */
+    async getUserById(id: string): Promise<IUser | null> {
+        return this.userRepository.findById(id, '-password');
+    }
 
-	async createUser(userData: Partial<IUser> & { password: string }): Promise<IUser> {
-		const { password, ...rest } = userData;
+    /**
+     * Obtener usuario por email (con password para autenticación)
+     */
+    async getUserByEmail(email: string): Promise<IUser | null> {
+        return this.userRepository.findByEmail(email);
+    }
 
-		// Validadores
-		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    /**
+     * Crear un nuevo usuario
+     * @param userData - Datos validados por Zod (futuro: CreateUserDto)
+     * Aplica reglas de negocio: bloqueo de superadmin, email único, hasheo
+     */
+    async createUser(userData: CreateUserRequestDto): Promise<IUser> {
+        const { password, role, email, ...rest } = userData;
 
-		const email = (rest as any).email;
-		if (!email || typeof email !== 'string' || !emailFormat.test(email)) {
-			throw new Error('INVALID_EMAIL');
-		}
+        // REGLA DE NEGOCIO: Email único
+        const emailExists = await this.userRepository.emailExists(email);
+        if (emailExists) {
+            throw new Error('EMAIL_DUPLICATE');
+        }
 
-		if (!password || typeof password !== 'string' || !passwordStrong.test(password)) {
-			throw new Error('INVALID_PASSWORD');
-		}
+        // Hashear password
+        const hashedPassword = await this.hashPassword(password);
 
-	
-		{
-			const escaped = String(email).replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-			const emailRegex = new RegExp('^' + escaped + '$', 'i');
-			const existing = await UserModel.findOne({ email: { $regex: emailRegex } }).exec();
-			if (existing) throw new Error('EMAIL_DUPLICATE');
-		}
+        // Crear usuario
+        const newUser = await this.userRepository.create({
+            ...rest,
+            email,
+            role,
+            password: hashedPassword
+        });
 
-		const salt = await bcrypt.genSalt(10);
-		const hashed = await bcrypt.hash(password, salt);
-		const newUser = new UserModel({ ...rest, password: hashed });
-		const saved = await newUser.save();
-		const obj = (saved as any).toObject ? (saved as any).toObject() : saved;
-		delete obj.password;
-		return obj;
-	}
+        // Retornar sin password
+        return sanitizeUser(newUser);
+    }
 
-	async updateUser(id: string, updateData: Partial<IUser> & { password?: string }): Promise<IUser | null> {
-		const data: any = { ...updateData };
+    /**
+     * Actualizar un usuario existente
+     * @param id - ID del usuario a actualizar
+     * @param updateData - Datos validados por Zod (futuro: UpdateUserDto)
+     * Aplica reglas de negocio: bloqueo de superadmin, email único
+     */
+    async updateUser(id: string, updateData: UpdateUserRequestDto): Promise<IUser | null> {
+        const { password, role, email, ...rest } = updateData;
 
-		const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		const passwordStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        const dataToUpdate: any = { ...rest };
 
-		if (updateData.email) {
-			const email = String(updateData.email);
-			if (!emailFormat.test(email)) throw new Error('INVALID_EMAIL');
+        // REGLA DE NEGOCIO: Email único (si se está actualizando)
+        if (email) {
+            const emailExists = await this.userRepository.emailExists(email, id);
+            if (emailExists) {
+                throw new Error('EMAIL_DUPLICATE');
+            }
+            dataToUpdate.email = email;
+        }
 
-			const escaped = email.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-			const emailRegex = new RegExp('^' + escaped + '$', 'i');
-			const existing = await UserModel.findOne({ email: { $regex: emailRegex } }).exec();
-			if (existing && existing._id.toString() !== id) throw new Error('EMAIL_DUPLICATE');
-			data.email = email;
-		}
+        // Agregar role si existe
+        if (role) {
+            dataToUpdate.role = role;
+        }
 
-	
-		if (updateData.password) {
-			if (!passwordStrong.test(updateData.password)) throw new Error('INVALID_PASSWORD');
-			const salt = await bcrypt.genSalt(10);
-			data.password = await bcrypt.hash(updateData.password, salt);
-		}
+        // Hashear password si se está actualizando
+        if (password) {
+            dataToUpdate.password = await this.hashPassword(password);
+        }
 
-		const updated = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
-		if (!updated) return null;
-		const obj = (updated as any).toObject ? (updated as any).toObject() : updated;
-		delete obj.password;
-		return obj;
-	}
+        // Actualizar usuario
+        const updated = await this.userRepository.update(id, dataToUpdate);
+        if (!updated) return null;
 
-	async deleteUser(id: string): Promise<IUser | null> {
-		return UserModel.findByIdAndDelete(id).exec();
-	}
+        // Retornar sin password
+        return sanitizeUser(updated);
+    }
+
+    /**
+     * Eliminar un usuario
+     */
+    async deleteUser(id: string): Promise<IUser | null> {
+        return this.userRepository.delete(id);
+    }
+
+    // ========== Métodos privados ==========
+
+    /**
+     * Hashear password con bcrypt
+     */
+    private async hashPassword(password: string): Promise<string> {
+        const salt = await bcrypt.genSalt(10);
+        return bcrypt.hash(password, salt);
+    }
+
 }

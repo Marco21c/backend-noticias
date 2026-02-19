@@ -1,141 +1,108 @@
-// TODO: Implementar controller de News
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { NewsService } from '../services/news.services.js';
+import { AppError } from '../errors/AppError.js';
+import type {
+    CreateNewsRequestDto,
+    UpdateNewsRequestDto,
+    NewsQueryRequestDto,
+    NewsIdRequestDto,
+    NewsByCategoryRequestDto
+} from '../dtos/news.dto.js';
+import { toNewsResponseDto, toNewsPublicResponseDto } from '../dtos/news.dto.js';
+import { successResponse } from '../dtos/response.dto.js';
 
 export class NewsController {
+    private newsService: NewsService;
+
+    constructor(newsService?: NewsService) {
+        this.newsService = newsService || new NewsService();
+        
+        this.getNews = this.getNews.bind(this);
+        this.createNews = this.createNews.bind(this);
+        this.getNewsById = this.getNewsById.bind(this);
+        this.getNewsByCategory = this.getNewsByCategory.bind(this);
+        this.editNews = this.editNews.bind(this);
+        this.deleteNews = this.deleteNews.bind(this);
+    }
 
     async getNews(req: Request, res: Response): Promise<Response> {
-        try {
-            const { status, author } = req.query;
-            const filters: { status?: string; author?: string } = {};
-            
-            if (status && typeof status === 'string') {
-                filters.status = status;
-            }
-            
-            if (author && typeof author === 'string') {
-                filters.author = author;
-            }
-            
-            const news = await new NewsService().getAllNews(
-                Object.keys(filters).length > 0 ? filters : undefined
-            );
-            
-            return res.status(200).json(news);
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticias', error });
-        }
+        const query = res.locals.validated?.query as NewsQueryRequestDto | undefined;
+        const news = await this.newsService.getAllNews(query);
+        const payload = news.map(toNewsPublicResponseDto); // DTO público sin author.id
+        return res.status(200).json(successResponse(payload));
     }
 
     async createNews(req: Request, res: Response): Promise<Response> {
-        try {
-            const newsData = req.body;
-            const user = (req as any).user;
-            
-            if (!user || !user._id) {
-                return res.status(401).json({ message: 'Usuario no autenticado' });
-            }
-            
-            // Pasar explícitamente el authorId al service
-            const newNews = await new NewsService().createNews(newsData, user._id);
-            return res.status(201).json({ message: 'Noticia creada exitosamente', data: newNews });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al crear noticia', error });
+        const newsData = res.locals.validated.body as CreateNewsRequestDto;
+        const user = (req as any).user;
+        
+        if (!user || !user._id) {
+            throw new AppError('Usuario no autenticado', 401, 'UNAUTHENTICATED');
         }
+        
+        const newNews = await this.newsService.createNews(newsData, user._id);
+        const payload = toNewsResponseDto(newNews);
+        return res
+            .status(201)
+            .json(successResponse(payload, 'Noticia creada exitosamente'));
     }
 
     async getNewsById(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params;
+        const { id } = res.locals.validated.params as NewsIdRequestDto;
+        const news = await this.newsService.getNewsById(id);
 
-            if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
-            }
-
-            const news = await new NewsService().getNewsById(id);
-
-            if (!news) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
-            }
-
-            return res.status(200).json(news);
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticia', error });
+        if (!news) {
+            throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
         }
+
+        return res.status(200).json(successResponse(toNewsPublicResponseDto(news))); // DTO público
     }
 
     async getNewsByCategory(req: Request, res: Response): Promise<Response> {
-        try {
-            const category = req.query.category;
+        const { category } = res.locals.validated.query as NewsByCategoryRequestDto;
+        const news = await this.newsService.getNewsByCategory(category);
 
-            if (!category || typeof category !== 'string') {
-                return res.status(400).json({ message: 'Categoría de noticia inválida' });
-            }
-
-            const news = await new NewsService().getNewsByCategory(category);
-
-            if (!news || news.length === 0) {
-                return res.status(404).json({ message: 'No se encontraron noticias para esta categoría' });
-            }
-
-            return res.status(200).json(news);
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al obtener noticias', error });
+        if (!news || news.length === 0) {
+            throw new AppError(
+                'No se encontraron noticias para esta categoria', 
+                404, 
+                'NEWS_CATEGORY_NOT_FOUND'
+            );
         }
+
+        const payload = news.map(toNewsPublicResponseDto); // DTO público
+        return res.status(200).json(successResponse(payload));
     }
 
-
     async editNews(req: Request, res: Response): Promise<Response> {
-        try {
-            const idFromParams = req.params.id;
-            let id: string | undefined = undefined;
-
-            if (idFromParams && typeof idFromParams === 'string') {
-                id = idFromParams;
-            } else if (req.query && typeof req.query._id === 'string') {
-                id = req.query._id;
-            } else if (req.query && Array.isArray(req.query._id) && typeof req.query._id[0] === 'string') {
-                id = req.query._id[0];
-            }
-
-            const newsData = req.body;
-
-            if (!id) {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
-            }
-
-            const edited = await new NewsService().editNews(id, newsData);
-
-            if (!edited) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
-            }
-
-            return res.status(200).json({ message: 'Noticia editada exitosamente', data: edited });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al editar noticia', error });
+        const { id } = res.locals.validated.params as NewsIdRequestDto;
+        const newsData = res.locals.validated.body as UpdateNewsRequestDto;
+        
+        const edited = await this.newsService.editNews(id, newsData);
+        
+        if (!edited) {
+            throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
         }
+
+        const payload = toNewsResponseDto(edited);
+        return res
+            .status(200)
+            .json(successResponse(payload, 'Noticia editada exitosamente'));
     }
 
     async deleteNews(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params;
-            
-            if (!id || typeof id !== 'string') {
-                return res.status(400).json({ message: 'ID de noticia inválido' });
-            }
-            
-            const deletedNews = await new NewsService().deleteNews(id);
-            
-            if (!deletedNews) {
-                return res.status(404).json({ message: 'Noticia no encontrada' });
-            }
-            
-            return res.status(200).json({ message: 'Noticia eliminada exitosamente', data: deletedNews });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error al eliminar noticia', error });
+        const { id } = res.locals.validated.params as NewsIdRequestDto;
+        const deletedNews = await this.newsService.deleteNews(id);
+        
+        if (!deletedNews) {
+            throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
         }
+        
+        const payload = toNewsResponseDto(deletedNews);
+        return res
+            .status(200)
+            .json(successResponse(payload, 'Noticia eliminada exitosamente'));
     }
-       
 }
 
 export const newsController = new NewsController();

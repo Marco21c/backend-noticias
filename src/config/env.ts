@@ -23,6 +23,13 @@ const envSchema = z.object({
   // JWT
   JWT_SECRET: z.string().min(32).optional(),
   JWT_EXPIRES_IN: z.string().default('7d'),
+
+  // Superadmin
+  INIT_SUPERADMIN: z.string().optional(),
+  SUPERADMIN_NAME: z.string().optional(),
+  SUPERADMIN_LASTNAME: z.string().optional(),
+  SUPERADMIN_EMAIL: z.string().optional(),
+  SUPERADMIN_PASSWORD: z.string().optional(),
 }).refine(
   (data) => {
     // Validar que exista MONGODB_URI en producción o MONGODB_DEV en desarrollo
