@@ -167,10 +167,9 @@ export class NewsService {
    * @returns Query sanitizado
    */
   private sanitizeSearchQuery(query: string): string {
-    // Remover caracteres especiales que podrían causar problemas
-    // pero mantener espacios, letras, números y algunos caracteres comunes
+    // Escapar caracteres especiales de regex para búsqueda segura
     return query
-      .replace(/["\\]/g, '') // Remover comillas y backslashes
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       .substring(0, 100); // Limitar longitud máxima
   }
 }

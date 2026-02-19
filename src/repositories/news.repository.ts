@@ -78,10 +78,10 @@ export class NewsRepository {
 	}
 
 	/**
-	 * Buscar noticias por palabra clave usando índices de texto de MongoDB
+	 * Buscar noticias por palabra clave con coincidencia parcial
 	 * @param keyword - Palabra clave a buscar (ya sanitizada)
 	 * @param options - Opciones de paginación
-	 * @returns Noticias ordenadas por fecha descendente y relevancia
+	 * @returns Noticias ordenadas por fecha descendente
 	 */
 	async searchByKeyword(
 		keyword: string,
@@ -92,25 +92,26 @@ export class NewsRepository {
 		const limit = Math.max(1, options.limit || 10);
 		const skip = (page - 1) * limit;
 
-		// Búsqueda con índice de texto y score de relevancia
-		const results = await NewsModel.find(
-			{ $text: { $search: keyword } },
-			{ score: { $meta: 'textScore' } } // Agregar score de relevancia
-		)
-			.sort({ 
-				publicationDate: -1,             // Primero por fecha descendente (más reciente)
-				score: { $meta: 'textScore' }   // Luego por relevancia
+		const regex = new RegExp(keyword, 'i');
+		const filter = {
+			$or: [
+				{ title: { $regex: regex } },
+				{ content: { $regex: regex } }
+			]
+		};
+
+		const results = await NewsModel.find(filter)
+			.sort({
+				publicationDate: -1
 			})
 			.skip(skip)
 			.limit(limit)
 			.populate('category', 'name')
 			.populate('author', 'name')
+			.lean()
 			.exec();
 
-		// Contar total de resultados
-		const total = await NewsModel.countDocuments({
-			$text: { $search: keyword }
-		}).exec();
+		const total = await NewsModel.countDocuments(filter).exec();
 
 		return {
 			results,
