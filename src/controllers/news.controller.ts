@@ -6,7 +6,8 @@ import type {
     UpdateNewsRequestDto,
     NewsQueryRequestDto,
     NewsIdRequestDto,
-    NewsByCategoryRequestDto
+    NewsByCategoryRequestDto,
+    SearchNewsRequestDto
 } from '../dtos/news.dto.js';
 import { toNewsResponseDto, toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
@@ -21,6 +22,7 @@ export class NewsController {
         this.createNews = this.createNews.bind(this);
         this.getNewsById = this.getNewsById.bind(this);
         this.getNewsByCategory = this.getNewsByCategory.bind(this);
+        this.searchNews = this.searchNews.bind(this);
         this.editNews = this.editNews.bind(this);
         this.deleteNews = this.deleteNews.bind(this);
     }
@@ -72,6 +74,34 @@ export class NewsController {
 
         const payload = news.map(toNewsPublicResponseDto); // DTO público
         return res.status(200).json(successResponse(payload));
+    }
+
+    async searchNews(req: Request, res: Response): Promise<Response> {
+        const { q, page, limit } = res.locals.validated.query as SearchNewsRequestDto;
+        
+        const result = await this.newsService.searchByKeyword(
+            q,
+            page || 1,
+            limit || 10
+        );
+        
+        const payload = result.results.map(toNewsPublicResponseDto);
+        
+        return res.status(200).json(
+            successResponse(
+                {
+                    items: payload,
+                    pagination: {
+                        total: result.total,
+                        page: result.page,
+                        limit: limit || 10,
+                        totalPages: result.totalPages
+                    },
+                    query: q
+                },
+                `Se encontraron ${result.total} resultado(s) para "${q}"`
+            )
+        );
     }
 
     async editNews(req: Request, res: Response): Promise<Response> {

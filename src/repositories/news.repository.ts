@@ -1,6 +1,7 @@
 import type { INews } from '../interfaces/news.interface.js';
 import NewsModel from '../models/news.model.js';
 import type { Types } from 'mongoose';
+import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
 
 /**
  * NewsRepository - Capa de acceso a datos para News
@@ -74,5 +75,45 @@ export class NewsRepository {
 	 */
 	async findByStatus(status: string): Promise<INews[]> {
 		return NewsModel.find({ status }).exec();
+	}
+
+	/**
+	 * Buscar noticias por palabra clave usando índices de texto de MongoDB
+	 * @param keyword - Palabra clave a buscar (ya sanitizada)
+	 * @param options - Opciones de paginación
+	 * @returns Noticias ordenadas por relevancia con score
+	 */
+	async searchByKeyword(
+		keyword: string,
+		options: IPaginationOptions = {}
+	): Promise<IPaginatedResponse<INews>> {
+		// Validación defensiva: asegurar valores válidos
+		const page = Math.max(1, options.page || 1);
+		const limit = Math.max(1, options.limit || 10);
+		const skip = (page - 1) * limit;
+
+		// Búsqueda con índice de texto y score de relevancia
+		const results = await NewsModel.find(
+			{ $text: { $search: keyword } },
+			{ score: { $meta: 'textScore' } } // Agregar score de relevancia
+		)
+			.sort({ score: { $meta: 'textScore' } }) // Ordenar por relevancia
+			.skip(skip)
+			.limit(limit)
+			.populate('category', 'name')
+			.populate('author', 'name')
+			.exec();
+
+		// Contar total de resultados
+		const total = await NewsModel.countDocuments({
+			$text: { $search: keyword }
+		}).exec();
+
+		return {
+			results,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit)
+		};
 	}
 }

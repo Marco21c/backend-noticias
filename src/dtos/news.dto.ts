@@ -4,7 +4,8 @@ import type {
   UpdateNewsInput,
   NewsQuery,
   NewsIdParam,
-  NewsByCategoryQuery
+  NewsByCategoryQuery,
+  SearchNewsQuery
 } from '../validations/news.schemas.js';
 
 export type CreateNewsRequestDto = CreateNewsInput;
@@ -12,6 +13,7 @@ export type UpdateNewsRequestDto = UpdateNewsInput;
 export type NewsQueryRequestDto = NewsQuery;
 export type NewsIdRequestDto = NewsIdParam;
 export type NewsByCategoryRequestDto = NewsByCategoryQuery;
+export type SearchNewsRequestDto = SearchNewsQuery;
 
 export type NewsReferenceDto = {
   id?: string;
