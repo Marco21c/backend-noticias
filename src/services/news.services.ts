@@ -148,8 +148,8 @@ export class NewsService {
       return { results: [], total: 0, page: 1, totalPages: 0 };
     }
 
-    // Sanitizar el término de búsqueda
-    const sanitizedQuery = this.sanitizeSearchQuery(q.trim());
+    // Construir patrón de búsqueda tolerante a acentos
+    const sanitizedQuery = this.buildSearchPattern(q.trim());
 
     // Validar y normalizar parámetros de paginación
     const normalizedPage = Math.max(1, page);
@@ -162,14 +162,42 @@ export class NewsService {
   }
 
   /**
-   * Sanitiza el query de búsqueda para prevenir inyecciones
+   * Construye un patrón de búsqueda tolerante a acentos
    * @param query - Query sin sanitizar
-   * @returns Query sanitizado
+   * @returns Patrón regex seguro con clases de caracteres
    */
-  private sanitizeSearchQuery(query: string): string {
-    // Escapar caracteres especiales de regex para búsqueda segura
-    return query
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      .substring(0, 100); // Limitar longitud máxima
+  private buildSearchPattern(query: string): string {
+    const safeQuery = query.substring(0, 100);
+    const diacriticMap: Record<string, string> = {
+      a: '[aáàâäãå]',
+      e: '[eéèêë]',
+      i: '[iíìîï]',
+      o: '[oóòôöõ]',
+      u: '[uúùûü]',
+      n: '[nñ]',
+      c: '[cç]'
+    };
+
+    const pattern = Array.from(safeQuery)
+      .map((char) => {
+        const baseChar = char
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+
+        const mapped = diacriticMap[baseChar];
+        if (mapped) {
+          return mapped;
+        }
+
+        if (/[.*+?^${}()|[\]\\]/.test(char)) {
+          return `\\${char}`;
+        }
+
+        return char;
+      })
+      .join('');
+
+    return pattern;
   }
 }
