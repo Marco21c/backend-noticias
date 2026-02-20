@@ -33,6 +33,23 @@ export const newsByCategoryQuerySchema = z.object({
   category: z.string().min(1, 'Categoría de noticia inválida'),
 });
 
+export const searchNewsQuerySchema = z.object({
+  q: z.string()
+    .min(1, 'Término de búsqueda requerido')
+    .max(100, 'Término de búsqueda demasiado largo'),
+  page: z.coerce.number()
+    .int('La página debe ser un número entero')
+    .positive('La página debe ser mayor a 0')
+    .default(1)
+    .optional(),
+  limit: z.coerce.number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite debe ser al menos 1')
+    .max(50, 'El límite máximo es 50')
+    .default(10)
+    .optional(),
+});
+
 // ============================================
 // TIPOS INFERIDOS (para usar como DTOs temporales)
 // ============================================
@@ -41,3 +58,4 @@ export type UpdateNewsInput = z.infer<typeof updateNewsSchema>;
 export type NewsQuery = z.infer<typeof newsQuerySchema>;
 export type NewsIdParam = z.infer<typeof newsIdParamSchema>;
 export type NewsByCategoryQuery = z.infer<typeof newsByCategoryQuerySchema>;
+export type SearchNewsQuery = z.infer<typeof searchNewsQuerySchema>;

@@ -9,6 +9,7 @@ import {
   newsIdParamSchema,
   newsQuerySchema,
   newsByCategoryQuerySchema,
+  searchNewsQuerySchema,
 } from '../validations/news.schemas.js';
 
 const newsRouter = Router();
@@ -23,6 +24,12 @@ newsRouter.get(
   '/category',
   validateRequest({ query: newsByCategoryQuerySchema }),
   asyncHandler(newsController.getNewsByCategory)
+);
+
+newsRouter.get(
+  '/search',
+  validateRequest({ query: searchNewsQuerySchema }),
+  asyncHandler(newsController.searchNews)
 );
 
 newsRouter.get(

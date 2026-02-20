@@ -1,6 +1,7 @@
 import type { INews } from '../interfaces/news.interface.js';
 import NewsModel from '../models/news.model.js';
 import type { Types } from 'mongoose';
+import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
 
 /**
  * NewsRepository - Capa de acceso a datos para News
@@ -74,5 +75,55 @@ export class NewsRepository {
 	 */
 	async findByStatus(status: string): Promise<INews[]> {
 		return NewsModel.find({ status }).exec();
+	}
+
+	/**
+	 * Buscar noticias por palabra clave con coincidencia parcial.
+	 *
+	 * Busca en `title`, `summary`, `content` y `highlights` usando regex.
+	 * Retorna noticias ordenadas por fecha descendente.
+	 *
+	 * @param keyword - Palabra clave a buscar (ya sanitizada)
+	 * @param options - Opciones de paginación
+	 * @returns Noticias ordenadas por fecha descendente
+	 */
+	async searchByKeyword(
+		keyword: string,
+		options: IPaginationOptions = {}
+	): Promise<IPaginatedResponse<INews>> {
+		// Validación defensiva: asegurar valores válidos
+		const page = Math.max(1, options.page || 1);
+		const limit = Math.max(1, options.limit || 10);
+		const skip = (page - 1) * limit;
+
+		const regex = new RegExp(keyword, 'i');
+		const filter = {
+			$or: [
+				{ title: { $regex: regex } },
+				{ summary: { $regex: regex } },
+				{ content: { $regex: regex } },
+				{ highlights: { $regex: regex } }
+			]
+		};
+
+		const results = await NewsModel.find(filter)
+			.sort({
+				publicationDate: -1
+			})
+			.skip(skip)
+			.limit(limit)
+			.populate('category', 'name')
+			.populate('author', 'name')
+			.lean()
+			.exec();
+
+		const total = await NewsModel.countDocuments(filter).exec();
+
+		return {
+			results,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit)
+		};
 	}
 }

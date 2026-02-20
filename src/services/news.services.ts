@@ -2,6 +2,7 @@ import type { INews } from '../interfaces/news.interface.js';
 import { NewsRepository } from '../repositories/news.repository.js';
 import { Types } from 'mongoose';
 import { cleanUndefined } from '../helpers/cleanUndefined.js';
+import type { IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import type {
   CreateNewsRequestDto,
   UpdateNewsRequestDto,
@@ -117,5 +118,86 @@ export class NewsService {
    */
   async deleteNews(id: string): Promise<INews | null> {
     return this.newsRepository.delete(id);
+  }
+
+  /**
+  * Busca noticias que contengan una palabra clave específica.
+  *
+  * Utiliza búsqueda parcial con regex y patrón tolerante a acentos.
+  * Retorna resultados ordenados por fecha de publicación descendente.
+  * Soporta paginación para manejar grandes volúmenes de datos.
+   *
+   * @param q - Palabra clave o término de búsqueda
+   * @param page - Número de página (default: 1)
+   * @param limit - Cantidad de resultados por página (default: 10, max: 50)
+   * @returns Objeto con resultados paginados y metadata
+   * 
+   * @example
+   * ```typescript
+   * const results = await newsService.searchByKeyword('tecnología', 1, 10);
+   * // { results: [...], total: 45, page: 1, totalPages: 5 }
+   * ```
+   */
+  async searchByKeyword(
+    q: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<IPaginatedResponse<INews>> {
+    // Validar que el término de búsqueda no esté vacío
+    if (!q || q.trim().length === 0) {
+      return { results: [], total: 0, page: 1, totalPages: 0 };
+    }
+
+    // Construir patrón de búsqueda tolerante a acentos
+    const sanitizedQuery = this.buildSearchPattern(q.trim());
+
+    // Validar y normalizar parámetros de paginación
+    const normalizedPage = Math.max(1, page);
+    const normalizedLimit = Math.min(50, Math.max(1, limit)); // Max 50 resultados
+
+    return this.newsRepository.searchByKeyword(sanitizedQuery, {
+      page: normalizedPage,
+      limit: normalizedLimit
+    });
+  }
+
+  /**
+   * Construye un patrón de búsqueda tolerante a acentos
+   * @param query - Query sin sanitizar
+   * @returns Patrón regex seguro con clases de caracteres
+   */
+  private buildSearchPattern(query: string): string {
+    const safeQuery = query.substring(0, 100);
+    const diacriticMap: Record<string, string> = {
+      a: '[aáàâäãå]',
+      e: '[eéèêë]',
+      i: '[iíìîï]',
+      o: '[oóòôöõ]',
+      u: '[uúùûü]',
+      n: '[nñ]',
+      c: '[cç]'
+    };
+
+    const pattern = Array.from(safeQuery)
+      .map((char) => {
+        const baseChar = char
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+
+        const mapped = diacriticMap[baseChar];
+        if (mapped) {
+          return mapped;
+        }
+
+        if (/[.*+?^${}()|[\]\\]/.test(char)) {
+          return `\\${char}`;
+        }
+
+        return char;
+      })
+      .join('');
+
+    return pattern;
   }
 }
