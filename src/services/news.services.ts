@@ -121,11 +121,11 @@ export class NewsService {
   }
 
   /**
-   * Busca noticias que contengan una palabra clave específica.
-   * 
-   * Utiliza índices de texto de MongoDB para búsqueda eficiente.
-   * Retorna resultados ordenados por relevancia (textScore).
-   * Soporta paginación para manejar grandes volúmenes de datos.
+  * Busca noticias que contengan una palabra clave específica.
+  *
+  * Utiliza búsqueda parcial con regex y patrón tolerante a acentos.
+  * Retorna resultados ordenados por fecha de publicación descendente.
+  * Soporta paginación para manejar grandes volúmenes de datos.
    *
    * @param q - Palabra clave o término de búsqueda
    * @param page - Número de página (default: 1)

@@ -27,20 +27,4 @@ const NewsSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-// Índice de texto para búsqueda eficiente y con relevancia
-NewsSchema.index({
-  title: 'text',
-  summary: 'text',
-  content: 'text',
-  highlights: 'text'
-}, {
-  weights: {
-    title: 10,      // Mayor peso al título
-    summary: 5,     // Peso medio al resumen
-    content: 1,     // Peso base al contenido
-    highlights: 3   // Peso alto a highlights
-  },
-  name: 'NewsTextIndex'
-});
-
 export default mongoose.model<INews>('News', NewsSchema);

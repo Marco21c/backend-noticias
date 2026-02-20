@@ -78,7 +78,11 @@ export class NewsRepository {
 	}
 
 	/**
-	 * Buscar noticias por palabra clave con coincidencia parcial
+	 * Buscar noticias por palabra clave con coincidencia parcial.
+	 *
+	 * Busca en `title`, `summary`, `content` y `highlights` usando regex.
+	 * Retorna noticias ordenadas por fecha descendente.
+	 *
 	 * @param keyword - Palabra clave a buscar (ya sanitizada)
 	 * @param options - Opciones de paginación
 	 * @returns Noticias ordenadas por fecha descendente
@@ -96,7 +100,9 @@ export class NewsRepository {
 		const filter = {
 			$or: [
 				{ title: { $regex: regex } },
-				{ content: { $regex: regex } }
+				{ summary: { $regex: regex } },
+				{ content: { $regex: regex } },
+				{ highlights: { $regex: regex } }
 			]
 		};
 
