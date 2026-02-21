@@ -10,9 +10,9 @@ console.log(`URI: ${URI?.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`); // Oculta
 
 mongoose
   .connect(URI!)
-  .then(() => console.log('✅ Database connected'))
+  .then(() => console.log('Database connected'))
   .catch(err => {
-    console.error('❌ Error conectando a MongoDB:', err.message);
+    console.error('Error conectando a MongoDB:', err.message);
     process.exit(1);
   });
 
