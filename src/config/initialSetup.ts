@@ -20,7 +20,7 @@ export async function initializeSystem() {
 
 	// Validar que la contraseña esté configurada
 	if (!process.env.SUPERADMIN_PASSWORD) {
-		console.error('❌ ERROR: SUPERADMIN_PASSWORD no está configurada en .env');
+		console.error('ERROR: SUPERADMIN_PASSWORD no está configurada en .env');
 		console.error('   Agrega SUPERADMIN_PASSWORD en tu archivo .env antes de continuar.');
 		process.exit(1);
 	}
@@ -38,5 +38,5 @@ export async function initializeSystem() {
 		role: 'superadmin',
 	});
 
-	console.log('✅ Superadmin inicializado');
+	console.log('Superadmin inicializado');
 }
