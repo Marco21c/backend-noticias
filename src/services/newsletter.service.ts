@@ -1,14 +1,17 @@
 import { newsletterRepository } from '../repositories/newsletter.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import type { INewsletter } from '../interfaces/newsletter.interface.js';
+import type { INews } from '../interfaces/news.interface.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import { AppError } from '../errors/AppError.js';
 import { Types } from 'mongoose';
+import { NewsService } from './news.services.js';
 
 const userRepository = new UserRepository();
 
 export class NewsletterService {
 	private repository = newsletterRepository;
+	private newsService = new NewsService();
 
 	async subscribe(
 		user: IUser,
@@ -133,6 +136,53 @@ export class NewsletterService {
 
 	async getSubscribersByCategory(categoryId: string): Promise<INewsletter[]> {
 		return await this.repository.findActiveSubscribersByCategory(categoryId);
+	}
+
+	async getLatestNewsForUser(
+		userId: string,
+		limit: number = 10
+	): Promise<INews[]> {
+		const newsletter = await this.repository.findByUserId(userId);
+
+		if (!newsletter) {
+			throw new AppError(
+				'No se encontró la suscripción al newsletter',
+				404,
+				'NEWSLETTER_NOT_FOUND'
+			);
+		}
+
+		if (!newsletter.isActive) {
+			throw new AppError(
+				'La suscripción está inactiva. Reactívela primero.',
+				400,
+				'NEWSLETTER_INACTIVE'
+			);
+		}
+
+		const categories = Array.isArray(newsletter.preferredCategories)
+			? newsletter.preferredCategories.map((cat: any) => {
+					// Si es un objeto con _id, extrae el _id
+					if (typeof cat === 'object' && cat !== null && '_id' in cat) {
+						return cat._id instanceof Types.ObjectId
+							? cat._id.toString()
+							: String(cat._id);
+					}
+					// Si es ObjectId, conviertelo a string
+					if (cat instanceof Types.ObjectId) {
+						return cat.toString();
+					}
+					// Si es string, usalo directo
+					return String(cat);
+			  })
+			: [];
+
+		if (categories.length === 0) {
+			return [];
+		}
+
+		const news = await this.newsService.getLatestPublishedByCategories(categories, limit);
+		return news;
 	}
 }
 

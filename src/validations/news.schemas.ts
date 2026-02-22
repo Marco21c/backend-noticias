@@ -16,7 +16,12 @@ export const createNewsSchema = z.object({
   variant: z.enum(['highlighted', 'featured', 'default']).default('default'),
 });
 
-export const updateNewsSchema = createNewsSchema.partial();
+export const updateNewsSchema = createNewsSchema.partial().extend({
+  status: z
+    .enum(['draft', 'in_review', 'approved', 'published', 'rejected'])
+    .optional(),
+  publicationDate: z.date().nullable().optional(),
+});
 
 export const newsIdParamSchema = z.object({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID de MongoDB inválido'),

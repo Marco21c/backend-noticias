@@ -53,6 +53,19 @@ export const newsletterCategoryParamSchema = z.object({
 	categoryId: z.string().regex(mongoIdRegex, 'ID de categoría inválido'),
 });
 
+/**
+ * Schema para obtener ultimas noticias del newsletter
+ */
+export const newsletterLatestNewsQuerySchema = z.object({
+	limit: z.coerce
+		.number()
+		.int('El límite debe ser un número entero')
+		.min(1, 'El límite debe ser al menos 1')
+		.max(50, 'El límite máximo es 50')
+		.default(10)
+		.optional(),
+});
+
 // ============================================
 // TIPOS INFERIDOS
 // ============================================
@@ -61,3 +74,6 @@ export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export type NewsletterIdParam = z.infer<typeof newsletterIdParamSchema>;
 export type NewsletterEmailParam = z.infer<typeof newsletterEmailParamSchema>;
 export type NewsletterCategoryParam = z.infer<typeof newsletterCategoryParamSchema>;
+export type NewsletterLatestNewsQuery = z.infer<
+	typeof newsletterLatestNewsQuerySchema
+>;
