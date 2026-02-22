@@ -99,6 +99,46 @@ export class NewsService {
   }
 
   /**
+   * Obtiene las ultimas noticias publicadas por categorias.
+   *
+   * @param categories - IDs de categoria
+   * @param limit - Cantidad maxima de noticias
+   * @returns Array de noticias publicadas ordenadas por fecha
+   */
+  async getLatestPublishedByCategories(
+    categories: string[],
+    limit: number = 10
+  ): Promise<INews[]> {
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return [];
+    }
+
+    const normalizedLimit = Math.min(50, Math.max(1, limit));
+    const categoryIds = categories
+      .map((cat) => {
+        try {
+          return new Types.ObjectId(cat);
+        } catch {
+          return null;
+        }
+      })
+      .filter((cat): cat is Types.ObjectId => Boolean(cat));
+
+    console.log('🔎 categoryIds after normalization:', categoryIds.map(id => id.toString()));
+
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
+    const news = await this.newsRepository.findPublishedByCategories(
+      categoryIds,
+      normalizedLimit
+    );
+    console.log('📄 News from repository:', news.length, 'results');
+    return news;
+  }
+
+  /**
    * Actualiza una noticia existente.
    *
    * @param id - ID de la noticia a actualizar
@@ -107,6 +147,12 @@ export class NewsService {
    */
   async editNews(id: string, newsData: UpdateNewsRequestDto): Promise<INews | null> {
     const cleanedData = cleanUndefined(newsData) as Partial<INews>;
+
+    // Si se está publicando, asegurar que tiene publicationDate
+    if (cleanedData.status === 'published' && !cleanedData.publicationDate) {
+      cleanedData.publicationDate = new Date();
+    }
+
     return this.newsRepository.update(id, cleanedData);
   }
 

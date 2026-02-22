@@ -6,6 +6,7 @@ import type {
 	NewsletterIdParam,
 	NewsletterEmailParam,
 	NewsletterCategoryParam,
+	NewsletterLatestNewsQuery,
 } from '../validations/newsletter.schemas.js';
 
 type PopulatedUser = {
@@ -34,6 +35,7 @@ export type UpdatePreferencesRequestDto = UpdatePreferencesInput;
 export type NewsletterIdRequestDto = NewsletterIdParam;
 export type NewsletterEmailRequestDto = NewsletterEmailParam;
 export type NewsletterCategoryRequestDto = NewsletterCategoryParam;
+export type NewsletterLatestNewsQueryRequestDto = NewsletterLatestNewsQuery;
 
 export type NewsletterResponseDto = {
 	id: string;

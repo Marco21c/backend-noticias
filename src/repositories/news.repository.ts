@@ -33,9 +33,32 @@ export class NewsRepository {
 	 */
 	async findByCategory(category: string): Promise<INews[]> {
 		return NewsModel.find({ category })
+			.sort({ publicationDate: -1 })
 			.populate('category', 'name')
 			.populate('author', 'name')
 			.exec();
+	}
+
+	/**
+	 * Buscar noticias publicadas por categorías
+	 */
+	async findPublishedByCategories(
+		categoryIds: Types.ObjectId[],
+		limit: number
+	): Promise<INews[]> {
+		const query = {
+			status: 'published',
+			category: { $in: categoryIds },
+		};
+		console.log('🔎 MongoDB query:', JSON.stringify(query));
+		const results = await NewsModel.find(query)
+			.sort({ publicationDate: -1 })
+			.limit(limit)
+			.populate('category', 'name')
+			.populate('author', 'name')
+			.exec();
+		console.log('✅ MongoDB results:', results.length);
+		return results;
 	}
 
 	/**
@@ -50,7 +73,7 @@ export class NewsRepository {
 	 * Actualizar una noticia existente
 	 */
 	async update(id: string, newsData: Partial<INews>): Promise<INews | null> {
-		return NewsModel.findByIdAndUpdate(id, newsData, { new: true })
+		return NewsModel.findByIdAndUpdate(id, newsData, { new: true, runValidators: true })
 			.populate('category', 'name')
 			.populate('author', 'name')
 			.exec();
