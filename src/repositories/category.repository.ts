@@ -74,4 +74,16 @@ export class CategoryRepository {
 	async delete(id: string): Promise<ICategory | null> {
 		return CategoryModel.findByIdAndDelete(id).exec();
 	}
+
+	/**
+	 * Verifica que múltiples categorías existan.
+	 *
+	 * @param ids - Array de IDs de categorías a verificar
+	 * @returns Array de categorías encontradas
+	 */
+	async findByIds(ids: string[]): Promise<ICategory[]> {
+		return CategoryModel.find({
+			_id: { $in: ids }
+		}).exec();
+	}
 }

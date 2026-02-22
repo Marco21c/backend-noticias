@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { type Types } from "mongoose";
 
 /**
  * Interfaz que representa una Noticia en el sistema.

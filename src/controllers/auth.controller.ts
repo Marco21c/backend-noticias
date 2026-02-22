@@ -1,9 +1,10 @@
-import type { Request, Response, NextFunction } from 'express';
-import AuthService from '../services/auth.services.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response } from 'express';
+
 import type { LoginRequestDto, LoginResponseDto } from '../dtos/auth.dto.js';
-import { toUserResponseDto } from '../dtos/user.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { toUserResponseDto } from '../dtos/user.dto.js';
+import { AppError } from '../errors/AppError.js';
+import AuthService from '../services/auth.services.js';
 
 /**
  * AuthController - Capa de presentación/API para autenticación

@@ -1,6 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
-import { CategoryService } from '../services/category.services.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response } from 'express';
+
 import type {
     CreateCategoryRequestDto,
     UpdateCategoryRequestDto,
@@ -8,6 +7,8 @@ import type {
 } from '../dtos/category.dto.js';
 import { toCategoryResponseDto } from '../dtos/category.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
+import { CategoryService } from '../services/category.services.js';
 
 /**
  * CategoryController - Capa de presentación/API

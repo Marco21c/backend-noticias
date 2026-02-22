@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { authController } from '../controllers/auth.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';

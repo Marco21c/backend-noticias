@@ -1,6 +1,6 @@
-import type { Request, Response, NextFunction } from 'express';
-import { UserService } from '../services/user.services.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response } from 'express';
+
+import { successResponse } from '../dtos/response.dto.js';
 import type {
     CreateUserRequestDto,
     UpdateUserRequestDto,
@@ -8,7 +8,8 @@ import type {
     UserEmailRequestDto
 } from '../dtos/user.dto.js';
 import { toUserResponseDto } from '../dtos/user.dto.js';
-import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
+import { UserService } from '../services/user.services.js';
 
 /**
  * UserController - Capa de presentación/API

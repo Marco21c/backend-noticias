@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { ZodType } from 'zod';
 import { ZodError } from 'zod';
+
 import { AppError } from '../errors/AppError.js';
 
 /** Partes del request que pueden ser validadas */

@@ -1,6 +1,5 @@
-import type { NextFunction, Request, Response } from 'express';
-import { NewsService } from '../services/news.services.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response } from 'express';
+
 import type {
     CreateNewsRequestDto,
     UpdateNewsRequestDto,
@@ -11,6 +10,8 @@ import type {
 } from '../dtos/news.dto.js';
 import { toNewsResponseDto, toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
+import { NewsService } from '../services/news.services.js';
 
 export class NewsController {
     private newsService: NewsService;
@@ -107,27 +108,31 @@ export class NewsController {
     async editNews(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as NewsIdRequestDto;
         const newsData = res.locals.validated.body as UpdateNewsRequestDto;
-        
-        const edited = await this.newsService.editNews(id, newsData);
-        
-        if (!edited) {
-            throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
-        }
+        const user = (req as any).user;
+
+        const edited = await this.newsService.editNews(
+            id,
+            newsData,
+            user?._id,
+            user?.role
+        );
 
         const payload = toNewsResponseDto(edited);
         return res
             .status(200)
-            .json(successResponse(payload, 'Noticia editada exitosamente'));
+            .json(successResponse(payload, 'Noticia actualizada exitosamente'));
     }
 
     async deleteNews(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as NewsIdRequestDto;
-        const deletedNews = await this.newsService.deleteNews(id);
-        
-        if (!deletedNews) {
-            throw new AppError('Noticia no encontrada', 404, 'NEWS_NOT_FOUND');
-        }
-        
+        const user = (req as any).user;
+
+        const deletedNews = await this.newsService.deleteNews(
+            id,
+            user?._id,
+            user?.role
+        );
+
         const payload = toNewsResponseDto(deletedNews);
         return res
             .status(200)

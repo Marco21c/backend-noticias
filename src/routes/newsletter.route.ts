@@ -1,7 +1,8 @@
 import { Router } from 'express';
+
 import { newsletterController } from '../controllers/newsletter.controller.js';
-import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
 import {
 	subscribeSchema,

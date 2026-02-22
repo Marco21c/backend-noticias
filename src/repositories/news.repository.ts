@@ -1,7 +1,8 @@
-import type { INews } from '../interfaces/news.interface.js';
-import NewsModel from '../models/news.model.js';
 import type { Types } from 'mongoose';
+
+import type { INews } from '../interfaces/news.interface.js';
 import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
+import NewsModel from '../models/news.model.js';
 
 /**
  * NewsRepository - Capa de acceso a datos para News
@@ -50,15 +51,12 @@ export class NewsRepository {
 			status: 'published',
 			category: { $in: categoryIds },
 		};
-		console.log('🔎 MongoDB query:', JSON.stringify(query));
-		const results = await NewsModel.find(query)
+		return NewsModel.find(query)
 			.sort({ publicationDate: -1 })
 			.limit(limit)
 			.populate('category', 'name')
 			.populate('author', 'name')
 			.exec();
-		console.log('✅ MongoDB results:', results.length);
-		return results;
 	}
 
 	/**

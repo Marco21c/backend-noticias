@@ -1,48 +1,55 @@
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+
 import '../config/database.js';
 import UserModel from '../models/user.model.js';
+import logger from '../utils/logger.js';
 
+/**
+ * CLI script to create a superadmin user.
+ * Requires SUPERADMIN_PASSWORD in .env file.
+ * 
+ * Usage: npm run create-superadmin
+ */
 async function createSuperAdmin() {
-	try {
-		if (mongoose.connection.readyState !== 1) {
-			await mongoose.connection.asPromise();
-		}
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connection.asPromise();
+    }
 
-		const existingSuperAdmin = await UserModel.findOne({ role: 'superadmin' }).exec();
+    const existingSuperAdmin = await UserModel.findOne({ role: 'superadmin' }).exec();
 
-		if (existingSuperAdmin) {
-			console.log('Ya existe un superadmin en el sistema');
-			return;
-		}
+    if (existingSuperAdmin) {
+      logger.info('A superadmin already exists in the system');
+      return;
+    }
 
-		// Validar que la contraseña esté configurada
-		if (!process.env.SUPERADMIN_PASSWORD) {
-			console.error('ERROR: SUPERADMIN_PASSWORD no está configurada');
-			console.error('   Configura SUPERADMIN_PASSWORD en el .env antes de ejecutar este script.');
-			process.exit(1);
-		}
+    if (!process.env.SUPERADMIN_PASSWORD) {
+      logger.error('SUPERADMIN_PASSWORD is not configured');
+      logger.error('Configure SUPERADMIN_PASSWORD in .env before running this script.');
+      process.exit(1);
+    }
 
-		const password = process.env.SUPERADMIN_PASSWORD;
-		const hashedPassword = await bcrypt.hash(password, 10);
+    const password = process.env.SUPERADMIN_PASSWORD;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-		const superAdmin = await UserModel.create({
-			name: process.env.SUPERADMIN_NAME || 'Super',
-			lastName: process.env.SUPERADMIN_LASTNAME || 'Admin',
-			email: process.env.SUPERADMIN_EMAIL || 'superadmin@tunoticias.com',
-			password: hashedPassword,
-			role: 'superadmin',
-			createdAt: new Date(),
-		});
+    const superAdmin = await UserModel.create({
+      name: process.env.SUPERADMIN_NAME || 'Super',
+      lastName: process.env.SUPERADMIN_LASTNAME || 'Admin',
+      email: process.env.SUPERADMIN_EMAIL || 'superadmin@tunoticias.com',
+      password: hashedPassword,
+      role: 'superadmin',
+      createdAt: new Date(),
+    });
 
-		console.log('Superadmin creado exitosamente');
-		console.log('Email:', superAdmin.email);
-		console.log(`Contraseña: ${password} (cámbiala inmediatamente)`);
-	} catch (error) {
-		console.error('Error al crear superadmin:', error);
-	} finally {
-		await mongoose.connection.close();
-	}
+    logger.info('Superadmin created successfully');
+    logger.info(`Email: ${superAdmin.email}`);
+    logger.info(`Password: ${password} (change it immediately)`);
+  } catch (error) {
+    logger.error({ error }, 'Error creating superadmin');
+  } finally {
+    await mongoose.connection.close();
+  }
 }
 
 createSuperAdmin();

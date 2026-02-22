@@ -5,10 +5,28 @@ import type {
   CategoryIdParam
 } from '../validations/category.schemas.js';
 
+/**
+ * DTO for creating a new category.
+ * @typedef {CreateCategoryInput} CreateCategoryRequestDto
+ */
 export type CreateCategoryRequestDto = CreateCategoryInput;
+
+/**
+ * DTO for updating an existing category.
+ * @typedef {UpdateCategoryInput} UpdateCategoryRequestDto
+ */
 export type UpdateCategoryRequestDto = UpdateCategoryInput;
+
+/**
+ * DTO for category ID parameter.
+ * @typedef {CategoryIdParam} CategoryIdRequestDto
+ */
 export type CategoryIdRequestDto = CategoryIdParam;
 
+/**
+ * Category response DTO.
+ * Represents a category in API responses.
+ */
 export type CategoryResponseDto = {
   id: string;
   name: string;
@@ -18,15 +36,25 @@ export type CategoryResponseDto = {
   updatedAt?: Date;
 };
 
-export function toCategoryResponseDto(category: ICategory | any): CategoryResponseDto {
-  const obj = category?.toObject ? category.toObject() : category;
+type CategoryInput = ICategory & { toObject?: () => ICategory; _id?: unknown };
 
-  return {
-    id: String(obj._id ?? obj.id),
-    name: obj.name,
-    description: obj.description ?? '',
+/**
+ * Transforms a category entity to a response DTO.
+ * @param category - Category entity or mongoose document
+ * @returns Category response DTO
+ */
+export function toCategoryResponseDto(category: CategoryInput): CategoryResponseDto {
+  const obj = typeof category.toObject === 'function' ? category.toObject() : category;
+
+  const response: CategoryResponseDto = {
+    id: String(obj._id ?? ''),
+    name: String(obj.name ?? ''),
     isActive: Boolean(obj.isActive),
-    createdAt: obj.createdAt,
-    updatedAt: obj.updatedAt
   };
+
+  if (obj.description) response.description = obj.description;
+  if (obj.createdAt) response.createdAt = obj.createdAt;
+  if (obj.updatedAt) response.updatedAt = obj.updatedAt;
+
+  return response;
 }

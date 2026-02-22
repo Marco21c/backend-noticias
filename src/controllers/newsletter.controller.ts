@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { newsletterService } from '../services/newsletter.service.js';
-import { AppError } from '../errors/AppError.js';
+
+import { toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import type {
 	SubscribeRequestDto,
 	UpdatePreferencesRequestDto,
@@ -13,9 +13,10 @@ import {
 	toNewsletterResponseDto,
 	toNewsletterSubscriberDto,
 } from '../dtos/newsletter.dto.js';
-import { toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
 import type { IUser } from '../interfaces/user.interface.js';
+import { newsletterService } from '../services/newsletter.service.js';
 
 export class NewsletterController {
 	private service = newsletterService;

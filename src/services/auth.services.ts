@@ -1,10 +1,12 @@
-import type { IUser } from '../interfaces/user.interface.js';
-import { UserRepository } from '../repositories/user.repository.js';
+
 import bcrypt from 'bcryptjs';
-import jwt, { type SignOptions } from 'jsonwebtoken';
+import jwt, { type SignOptions, type JwtPayload } from 'jsonwebtoken';
+
 import env from '../config/env.js';
 import type { LoginRequestDto } from '../dtos/auth.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
+import type { IUser } from '../interfaces/user.interface.js';
+import { UserRepository } from '../repositories/user.repository.js';
 
 /**
  * AuthService - Capa de lógica de negocio para autenticación
@@ -82,17 +84,14 @@ export class AuthService {
         return jwt.verify(token, secret);
     }
 
-    /**
-     * Obtener usuario desde token JWT
-     */
     async getUserFromToken(token: string): Promise<Omit<IUser, 'password'> | null> {
         try {
-            const decoded = this.verifyToken(token) as any;
+            const decoded = this.verifyToken(token) as JwtPayload;
             const id = decoded?.id || decoded?._id;
             if (!id) return null;
 
             return this.userRepository.findById(id, '-password');
-        } catch (err) {
+        } catch {
             return null;
         }
     }

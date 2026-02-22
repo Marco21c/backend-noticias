@@ -1,8 +1,9 @@
-import type { IUser } from '../interfaces/user.interface.js';
-import { UserRepository } from '../repositories/user.repository.js';
 import bcrypt from 'bcryptjs';
+
 import type { CreateUserRequestDto, UpdateUserRequestDto } from '../dtos/user.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
+import type { IUser } from '../interfaces/user.interface.js';
+import { UserRepository } from '../repositories/user.repository.js';
 
 /**
  * UserService - Capa de lógica de negocio para Users
@@ -45,16 +46,17 @@ export class UserService {
     async createUser(userData: CreateUserRequestDto): Promise<IUser> {
         const { password, role, email, ...rest } = userData;
 
-        // REGLA DE NEGOCIO: Email único
+        if (role === 'superadmin') {
+            throw new Error('FORBIDDEN_ROLE');
+        }
+
         const emailExists = await this.userRepository.emailExists(email);
         if (emailExists) {
             throw new Error('EMAIL_DUPLICATE');
         }
 
-        // Hashear password
         const hashedPassword = await this.hashPassword(password);
 
-        // Crear usuario
         const newUser = await this.userRepository.create({
             ...rest,
             email,
@@ -62,7 +64,6 @@ export class UserService {
             password: hashedPassword
         });
 
-        // Retornar sin password
         return sanitizeUser(newUser);
     }
 
@@ -75,9 +76,11 @@ export class UserService {
     async updateUser(id: string, updateData: UpdateUserRequestDto): Promise<IUser | null> {
         const { password, role, email, ...rest } = updateData;
 
-        const dataToUpdate: any = { ...rest };
+        const dataToUpdate: Record<string, unknown> = {};
 
-        // REGLA DE NEGOCIO: Email único (si se está actualizando)
+        if (rest.name !== undefined) dataToUpdate.name = rest.name;
+        if (rest.lastName !== undefined) dataToUpdate.lastName = rest.lastName;
+
         if (email) {
             const emailExists = await this.userRepository.emailExists(email, id);
             if (emailExists) {
@@ -86,8 +89,10 @@ export class UserService {
             dataToUpdate.email = email;
         }
 
-        // Agregar role si existe
         if (role) {
+            if (role === 'superadmin') {
+                throw new Error('FORBIDDEN_ROLE');
+            }
             dataToUpdate.role = role;
         }
 
