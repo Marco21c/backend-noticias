@@ -23,5 +23,6 @@ const NewsletterSchema: Schema = new Schema(
 	{ timestamps: true }
 );
 
+
 export default (mongoose.models.Newsletter as mongoose.Model<INewsletter>) ||
 	mongoose.model<INewsletter>('Newsletter', NewsletterSchema);

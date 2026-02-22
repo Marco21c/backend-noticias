@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(cors(corsOptions));
 
 // Routes
-app.use('/api', mainRouter); 
+app.use('/api', mainRouter);
 
 // Middlewares de error
 app.use(notFound);
@@ -28,7 +28,7 @@ async function startServer() {
   try {
     await initializeSystem();
   } catch (error) {
-    console.error('❌ Error en la inicialización del sistema:', error);
+    console.error('Error en la inicialización del sistema:', error);
   }
 
   app.listen(PORT, () => {

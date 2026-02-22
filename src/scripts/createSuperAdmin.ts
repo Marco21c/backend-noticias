@@ -12,13 +12,13 @@ async function createSuperAdmin() {
 		const existingSuperAdmin = await UserModel.findOne({ role: 'superadmin' }).exec();
 
 		if (existingSuperAdmin) {
-			console.log('❌ Ya existe un superadmin en el sistema');
+			console.log('Ya existe un superadmin en el sistema');
 			return;
 		}
 
 		// Validar que la contraseña esté configurada
 		if (!process.env.SUPERADMIN_PASSWORD) {
-			console.error('❌ ERROR: SUPERADMIN_PASSWORD no está configurada');
+			console.error('ERROR: SUPERADMIN_PASSWORD no está configurada');
 			console.error('   Configura SUPERADMIN_PASSWORD en el .env antes de ejecutar este script.');
 			process.exit(1);
 		}
@@ -35,11 +35,11 @@ async function createSuperAdmin() {
 			createdAt: new Date(),
 		});
 
-		console.log('✅ Superadmin creado exitosamente');
+		console.log('Superadmin creado exitosamente');
 		console.log('Email:', superAdmin.email);
 		console.log(`Contraseña: ${password} (cámbiala inmediatamente)`);
 	} catch (error) {
-		console.error('❌ Error al crear superadmin:', error);
+		console.error('Error al crear superadmin:', error);
 	} finally {
 		await mongoose.connection.close();
 	}
