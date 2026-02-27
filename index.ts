@@ -23,14 +23,14 @@ app.use(errorHandler);
 async function startServer() {
   try {
     await initializeSystem();
+    app.listen(PORT, () => {
+      logger.info(`Server running on http://localhost:${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV}`);
+    });
   } catch (error) {
     logger.error({ error }, 'System initialization failed');
+    process.exit(1);
   }
-
-  app.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT}`);
-    logger.info(`Environment: ${process.env.NODE_ENV}`);
-  });
 }
 
 startServer();
