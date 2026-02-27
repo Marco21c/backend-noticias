@@ -28,7 +28,7 @@ const NewsSchema: Schema = new Schema(
       enum: ['draft', 'in_review', 'approved', 'published', 'rejected'],
       default: 'draft'
     },
-    publicationDate: { type: Date, default: Date.now }
+    publicationDate: { type: Date, default: null }
   },
   { timestamps: true }
 );
