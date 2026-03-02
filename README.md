@@ -15,9 +15,14 @@ Backend robusto para sistema de gestión de noticias que proporciona autenticaci
 - CRUD completo de noticias y usuarios
 - Sistema de suscripción a newsletter con preferencias por categoría
 - Filtrado por categoría, autor y estado
+- Búsqueda de noticias con sanitización
 - Validación de variables de entorno con Zod
-- Arquitectura modular (MVC pattern)
+- Rate limiting para autenticación
+- Paginación en endpoints de listado
+- Arquitectura modular (Controller → Service → Repository)
 - Configuración de CORS para múltiples entornos
+- Sistema de logging estructurado con Pino
+- Linting con ESLint y TypeScript
 
 ## Requisitos Previos
 
@@ -62,10 +67,12 @@ CLIENT_URL=http://localhost:5173
 CLIENT_DEV_URL=http://localhost:5173
 APP_URL=http://localhost:3000
 
-# JWT
+# JWT (OBLIGATORIO - mínimo 32 caracteres)
 JWT_SECRET=tu_secreto_jwt_minimo_32_caracteres_aqui
 JWT_EXPIRES_IN=7d
 ```
+
+> **Nota:** `JWT_SECRET` es obligatorio y debe tener al menos 32 caracteres.
 
 ### 4. Inicializar Superadmin
 
@@ -85,6 +92,8 @@ npm run create-superadmin
 - `npm run create-superadmin` - Crea usuario superadmin
 - `npm run delete-superadmin` - Elimina usuario superadmin
 - `npm run type-check` - Verifica tipos TypeScript
+- `npm run lint` - Ejecuta ESLint para verificar código
+- `npm run lint:fix` - Ejecuta ESLint y corrige errores automáticamente
 
 ### Modo Desarrollo
 
@@ -117,10 +126,14 @@ backend-noticias/
 │   │   ├── news.controller.ts
 │   │   └── user.controller.ts
 │   ├── dtos/            # Data Transfer Objects
+│   ├── errors/          # Clases de error personalizadas
+│   ├── helpers/         # Funciones de utilidad
 │   ├── interfaces/      # Interfaces TypeScript
 │   ├── middlewares/     # Middlewares
 │   │   ├── auth.middleware.ts
-│   │   └── validation.middleware.ts
+│   │   ├── validation.middleware.ts
+│   │   ├── rateLimit.middleware.ts
+│   │   └── asyncHandler.ts
 │   ├── models/          # Modelos Mongoose
 │   │   ├── category.model.ts
 │   │   ├── newsletter.model.ts
@@ -132,8 +145,11 @@ backend-noticias/
 │   │   ├── createSuperAdmin.ts
 │   │   └── deleteSuperAdmin.ts
 │   ├── services/        # Lógica de negocio
+│   ├── utils/           # Utilidades
+│   │   └── logger.ts    # Sistema de logging con Pino
 │   └── validations/     # Schemas de validación Zod
 ├── dist/                # Código compilado
+├── eslint.config.mjs    # Configuración ESLint
 └── index.ts             # Punto de entrada
 ```
 
@@ -167,10 +183,11 @@ Content-Type: application/json
 
 ### Noticias
 
-#### Obtener todas las noticias
+#### Obtener todas las noticias (con paginación)
 ```http
 GET /api/news
-GET /api/news?category=technology
+GET /api/news?page=1&limit=10
+GET /api/news?status=published&page=1&limit=10
 GET /api/news?author=authorId
 GET /api/news?status=published
 ```
@@ -209,13 +226,30 @@ DELETE /api/news/:id
 Authorization: Bearer <token>
 ```
 
-### Usuarios (solo Superadmin)
+### Usuarios (solo Admin/Superadmin)
 
-#### Obtener todos los usuarios
+#### Obtener todos los usuarios (con paginación)
 ```http
 GET /api/users
+GET /api/users?page=1&limit=10
 Authorization: Bearer <token>
 ```
+
+> **Respuesta paginada**: Los endpoints de listado devuelven un objeto con `items` y `pagination`:
+> ```json
+> {
+>   "success": true,
+>   "data": {
+>     "items": [...],
+>     "pagination": {
+>       "total": 100,
+>       "page": 1,
+>       "limit": 10,
+>       "totalPages": 10
+>     }
+>   }
+> }
+> ```
 
 #### Crear usuario
 ```http
@@ -365,9 +399,48 @@ El sistema implementa cuatro niveles de acceso:
 - Contraseñas encriptadas con bcrypt
 - Autenticación mediante JWT
 - Tokens con expiración configurable
+- Rate limiting en autenticación (5 intentos cada 15 minutos)
+- Rate limiting general (100 solicitudes cada 15 minutos)
 - Middleware de autenticación para rutas protegidas
 - Validación de roles para endpoints sensibles
 - CORS configurado para orígenes específicos
+- Validación de autor en edición/eliminación de noticias
+- Protección contra creación de usuarios superadmin vía API
+- Sanitización de parámetros de búsqueda
+
+## Calidad de Código
+
+### ESLint
+
+El proyecto utiliza ESLint con configuración para TypeScript. Las reglas principales incluyen:
+
+- `no-console`: Prohibe uso de console (usar logger)
+- `@typescript-eslint/no-explicit-any`: Advierte sobre uso de `any`
+- `@typescript-eslint/consistent-type-imports`: Fuerza imports de tipo
+- `import/order`: Ordena imports automáticamente
+
+```bash
+# Verificar errores
+npm run lint
+
+# Corregir errores automáticamente
+npm run lint:fix
+```
+
+### Sistema de Logging
+
+El proyecto utiliza Pino para logging estructurado:
+
+- **Desarrollo**: Logs colorizados y legibles con pino-pretty
+- **Producción**: Logs en formato JSON
+
+```typescript
+import logger from './utils/logger.js';
+
+logger.info('Mensaje de información');
+logger.error({ err }, 'Mensaje de error');
+logger.debug({ data }, 'Mensaje de debug');
+```
 
 ## Tecnologías Utilizadas
 
@@ -385,9 +458,16 @@ El sistema implementa cuatro niveles de acceso:
 - bcryptjs ^3.0.3
 
 ### Validación y Configuración
-- Zod ^4.3.5
+- Zod ^3.24.0
 - dotenv ^17.2.3
 - cors ^2.8.5
+- express-rate-limit ^7.x
+
+### Logging y Calidad de Código
+- pino ^10.3.1
+- pino-pretty ^13.1.3
+- eslint ^9.39.3
+- typescript-eslint ^8.56.0
 
 ### Desarrollo
 - tsx ^4.21.0

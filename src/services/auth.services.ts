@@ -1,10 +1,12 @@
+
+import bcrypt from 'bcryptjs';
+import jwt, { type SignOptions, type JwtPayload } from 'jsonwebtoken';
+
+import env from '../config/env.js';
+import type { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.dto.js';
+import { sanitizeUser } from '../helpers/sanitizeUser.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
-import bcrypt from 'bcryptjs';
-import jwt, { type SignOptions } from 'jsonwebtoken';
-import env from '../config/env.js';
-import type { LoginRequestDto } from '../dtos/auth.dto.js';
-import { sanitizeUser } from '../helpers/sanitizeUser.js';
 
 /**
  * AuthService - Capa de lógica de negocio para autenticación
@@ -54,6 +56,42 @@ export class AuthService {
     }
 
     /**
+     * Registrar un nuevo usuario (rol: user por defecto)
+     * @param registerData - Datos del usuario a registrar
+     * @throws Error si el email ya existe
+     */
+    async register(registerData: RegisterRequestDto): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
+        const { name, lastName, email, password } = registerData;
+
+        const existingUser = await this.userRepository.findByEmail(email);
+        if (existingUser) {
+            throw new Error('EMAIL_ALREADY_EXISTS');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await this.userRepository.create({
+            name,
+            lastName,
+            email,
+            password: hashedPassword,
+            role: 'user',
+        });
+
+        const token = this.signToken({
+            id: newUser._id,
+            role: newUser.role,
+            email: newUser.email,
+            name: newUser.name,
+            lastName: newUser.lastName
+        });
+
+        const userWithoutPassword = sanitizeUser(newUser);
+
+        return { user: userWithoutPassword, token };
+    }
+
+    /**
      * Firmar token JWT
      * @throws Error con código 'JWT_SECRET_MISSING' si JWT_SECRET no está configurado
      */
@@ -82,17 +120,14 @@ export class AuthService {
         return jwt.verify(token, secret);
     }
 
-    /**
-     * Obtener usuario desde token JWT
-     */
     async getUserFromToken(token: string): Promise<Omit<IUser, 'password'> | null> {
         try {
-            const decoded = this.verifyToken(token) as any;
+            const decoded = this.verifyToken(token) as JwtPayload;
             const id = decoded?.id || decoded?._id;
             if (!id) return null;
 
             return this.userRepository.findById(id, '-password');
-        } catch (err) {
+        } catch {
             return null;
         }
     }

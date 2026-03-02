@@ -1,7 +1,8 @@
 import { Router } from 'express';
+
 import { newsletterController } from '../controllers/newsletter.controller.js';
-import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
 import {
 	subscribeSchema,
@@ -9,6 +10,7 @@ import {
 	newsletterIdParamSchema,
 	newsletterEmailParamSchema,
 	newsletterCategoryParamSchema,
+	newsletterLatestNewsQuerySchema,
 } from '../validations/newsletter.schemas.js';
 
 const newsletterRouter = Router();
@@ -65,6 +67,19 @@ newsletterRouter.get(
 	authenticate,
 	requireRole('user', 'editor', 'admin', 'superadmin'),
 	asyncHandler(newsletterController.getMySubscription)
+);
+
+/**
+ * GET /newsletter/my-news
+ * Obtener ultimas noticias segun preferencias del usuario autenticado
+ * Roles permitidos: user, editor, admin, superadmin
+ */
+newsletterRouter.get(
+	'/my-news',
+	authenticate,
+	requireRole('user', 'editor', 'admin', 'superadmin'),
+	validateRequest({ query: newsletterLatestNewsQuerySchema }),
+	asyncHandler(newsletterController.getMyLatestNews)
 );
 
 // ============================================

@@ -4,6 +4,22 @@ import { z } from 'zod';
 // SCHEMAS DE VALIDACIÓN
 // ============================================
 
+export const paginationQuerySchema = z.object({
+  page: z.coerce.number()
+    .int('La página debe ser un número entero')
+    .positive('La página debe ser mayor a 0')
+    .default(1)
+    .optional(),
+  limit: z.coerce.number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite debe ser al menos 1')
+    .max(50, 'El límite máximo es 50')
+    .default(10)
+    .optional(),
+});
+
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+
 export const createNewsSchema = z.object({
   title: z.string().min(3, 'Título demasiado corto'),
   slug: z.string().min(3, 'Slug demasiado corto'),
@@ -11,12 +27,17 @@ export const createNewsSchema = z.object({
   content: z.string().min(20, 'Contenido demasiado corto'),
   highlights: z.array(z.string().min(1)).default([]),
   category: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID de categoría inválido'),
-  mainImage: z.url('URL de imagen inválida').optional(),
+  mainImage: z.string().url('URL de imagen inválida').optional(),
   source: z.string().optional(),
   variant: z.enum(['highlighted', 'featured', 'default']).default('default'),
 });
 
-export const updateNewsSchema = createNewsSchema.partial();
+export const updateNewsSchema = createNewsSchema.partial().extend({
+  status: z
+    .enum(['draft', 'in_review', 'approved', 'published', 'rejected'])
+    .optional(),
+  publicationDate: z.date().nullable().optional(),
+});
 
 export const newsIdParamSchema = z.object({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID de MongoDB inválido'),
@@ -33,6 +54,23 @@ export const newsByCategoryQuerySchema = z.object({
   category: z.string().min(1, 'Categoría de noticia inválida'),
 });
 
+export const searchNewsQuerySchema = z.object({
+  q: z.string()
+    .min(1, 'Término de búsqueda requerido')
+    .max(100, 'Término de búsqueda demasiado largo'),
+  page: z.coerce.number()
+    .int('La página debe ser un número entero')
+    .positive('La página debe ser mayor a 0')
+    .default(1)
+    .optional(),
+  limit: z.coerce.number()
+    .int('El límite debe ser un número entero')
+    .min(1, 'El límite debe ser al menos 1')
+    .max(50, 'El límite máximo es 50')
+    .default(10)
+    .optional(),
+});
+
 // ============================================
 // TIPOS INFERIDOS (para usar como DTOs temporales)
 // ============================================
@@ -41,3 +79,4 @@ export type UpdateNewsInput = z.infer<typeof updateNewsSchema>;
 export type NewsQuery = z.infer<typeof newsQuerySchema>;
 export type NewsIdParam = z.infer<typeof newsIdParamSchema>;
 export type NewsByCategoryQuery = z.infer<typeof newsByCategoryQuerySchema>;
+export type SearchNewsQuery = z.infer<typeof searchNewsQuerySchema>;

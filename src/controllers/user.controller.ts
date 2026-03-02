@@ -1,14 +1,16 @@
-import type { Request, Response, NextFunction } from 'express';
-import { UserService } from '../services/user.services.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response } from 'express';
+
+import { successResponse } from '../dtos/response.dto.js';
 import type {
     CreateUserRequestDto,
     UpdateUserRequestDto,
     UserIdRequestDto,
-    UserEmailRequestDto
+    UserEmailRequestDto,
+    PaginationRequestDto
 } from '../dtos/user.dto.js';
 import { toUserResponseDto } from '../dtos/user.dto.js';
-import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
+import { UserService } from '../services/user.services.js';
 
 /**
  * UserController - Capa de presentación/API
@@ -29,9 +31,21 @@ export class UserController {
         this.deleteUser = this.deleteUser.bind(this);
     }
 
-    async getUsers(_req: Request, res: Response): Promise<Response> {
-        const users = await this.userService.getAllUsers();
-        const payload = users.map(toUserResponseDto);
+    async getUsers(req: Request, res: Response): Promise<Response> {
+        const query = res.locals.validated?.query as PaginationRequestDto | undefined;
+        const result = await this.userService.getUsersPaginated({
+            page: query?.page || 1,
+            limit: query?.limit || 10
+        });
+        const payload = {
+            items: result.results.map(toUserResponseDto),
+            pagination: {
+                total: result.total,
+                page: result.page,
+                limit: query?.limit || 10,
+                totalPages: result.totalPages
+            }
+        };
         return res.status(200).json(successResponse(payload));
     }
 

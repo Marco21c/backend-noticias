@@ -1,6 +1,11 @@
 import mongoose, { Schema } from 'mongoose';
+
 import type { IUser } from '../interfaces/user.interface.js';
 
+/**
+ * Mongoose schema for User entity.
+ * Defines the structure and validation for user documents.
+ */
 const UserSchema: Schema = new Schema(
 	{
 		email: { type: String, required: true, unique: true, lowercase: true, trim: true },

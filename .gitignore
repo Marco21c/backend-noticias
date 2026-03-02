@@ -13,6 +13,7 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
 
 # Node
 node_modules/
@@ -30,6 +31,10 @@ build/
 .idea/
 *.swp
 *.swo
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release

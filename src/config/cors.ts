@@ -1,15 +1,18 @@
 import type { CorsOptions } from 'cors';
 
+/**
+ * CORS configuration for the API.
+ * Allows requests from configured client URLs in development and production.
+ * Permits tools like Postman and curl (no origin) in all environments.
+ */
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
-        // * Origenes permitidos
         const allowedOrigins = [
             process.env.CLIENT_URL,
             process.env.CLIENT_DEV_URL,
             process.env.APP_URL,
         ];
 
-        // * Si no hay origen, se permite Postman, curl, etc.
         if (!origin) {
             return callback(null, true);
         }
@@ -17,7 +20,7 @@ const corsOptions: CorsOptions = {
         if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
-            callback(new Error(`${origin} no permitido por CORS`));
+            callback(new Error(`${origin} not allowed by CORS`));
         }
     },
     credentials: true,

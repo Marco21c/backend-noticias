@@ -1,6 +1,11 @@
 import mongoose, { Schema } from 'mongoose';
+
 import type { INewsletter } from '../interfaces/newsletter.interface.js';
 
+/**
+ * Mongoose schema for Newsletter subscription entity.
+ * Defines the structure and validation for newsletter subscription documents.
+ */
 const NewsletterSchema: Schema = new Schema(
 	{
 		user: {
@@ -22,8 +27,6 @@ const NewsletterSchema: Schema = new Schema(
 	},
 	{ timestamps: true }
 );
-
-NewsletterSchema.index({ user: 1 });
 
 export default (mongoose.models.Newsletter as mongoose.Model<INewsletter>) ||
 	mongoose.model<INewsletter>('Newsletter', NewsletterSchema);

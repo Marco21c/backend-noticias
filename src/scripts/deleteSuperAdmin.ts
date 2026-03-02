@@ -1,14 +1,15 @@
 import mongoose from 'mongoose';
+
 import '../config/database.js';
 import UserModel from '../models/user.model.js';
+import logger from '../utils/logger.js';
 
 /**
- * Script para eliminar el superadmin de la base de datos
- * Útil para testing o reset de desarrollo
+ * CLI script to delete the superadmin user from the database.
+ * Useful for testing or development reset.
  * 
- * Uso: npm run delete-superadmin
+ * Usage: npm run delete-superadmin
  */
-
 async function deleteSuperAdmin() {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -16,17 +17,17 @@ async function deleteSuperAdmin() {
     }
 
     const result = await UserModel.deleteOne({ role: 'superadmin' });
-    
+
     if (result.deletedCount > 0) {
-      console.log(`✅ Eliminado ${result.deletedCount} superadmin`);
+      logger.info(`Deleted ${result.deletedCount} superadmin`);
     } else {
-      console.log('ℹ️  No se encontró ningún superadmin para eliminar');
+      logger.info('No superadmin found to delete');
     }
-    
+
     await mongoose.connection.close();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error:', error);
+    logger.error({ error }, 'Error deleting superadmin');
     await mongoose.connection.close();
     process.exit(1);
   }

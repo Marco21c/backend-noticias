@@ -1,7 +1,8 @@
 import { Router } from 'express';
+
 import { newsController } from '../controllers/news.controller.js';
-import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
 import {
   createNewsSchema,
@@ -9,13 +10,15 @@ import {
   newsIdParamSchema,
   newsQuerySchema,
   newsByCategoryQuerySchema,
+  searchNewsQuerySchema,
+  paginationQuerySchema,
 } from '../validations/news.schemas.js';
 
 const newsRouter = Router();
 
 newsRouter.get(
   '/',
-  validateRequest({ query: newsQuerySchema }),
+  validateRequest({ query: newsQuerySchema.merge(paginationQuerySchema) }),
   asyncHandler(newsController.getNews)
 );
 
@@ -23,6 +26,12 @@ newsRouter.get(
   '/category',
   validateRequest({ query: newsByCategoryQuerySchema }),
   asyncHandler(newsController.getNewsByCategory)
+);
+
+newsRouter.get(
+  '/search',
+  validateRequest({ query: searchNewsQuerySchema }),
+  asyncHandler(newsController.searchNews)
 );
 
 newsRouter.get(
@@ -34,7 +43,7 @@ newsRouter.get(
 newsRouter.post(
   '/',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ body: createNewsSchema }),
   asyncHandler(newsController.createNews)
 );
@@ -42,7 +51,7 @@ newsRouter.post(
 newsRouter.put(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ params: newsIdParamSchema, body: updateNewsSchema }),
   asyncHandler(newsController.editNews)
 );
@@ -50,7 +59,7 @@ newsRouter.put(
 newsRouter.delete(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ params: newsIdParamSchema }),
   asyncHandler(newsController.deleteNews)
 );

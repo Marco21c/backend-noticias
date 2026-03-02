@@ -1,19 +1,22 @@
 import type { Request, Response } from 'express';
-import { newsletterService } from '../services/newsletter.service.js';
-import { AppError } from '../errors/AppError.js';
+
+import { toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import type {
 	SubscribeRequestDto,
 	UpdatePreferencesRequestDto,
 	NewsletterIdRequestDto,
 	NewsletterEmailRequestDto,
 	NewsletterCategoryRequestDto,
+	NewsletterLatestNewsQueryRequestDto,
 } from '../dtos/newsletter.dto.js';
 import {
 	toNewsletterResponseDto,
 	toNewsletterSubscriberDto,
 } from '../dtos/newsletter.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { AppError } from '../errors/AppError.js';
 import type { IUser } from '../interfaces/user.interface.js';
+import { newsletterService } from '../services/newsletter.service.js';
 
 export class NewsletterController {
 	private service = newsletterService;
@@ -23,6 +26,7 @@ export class NewsletterController {
 		this.updatePreferences = this.updatePreferences.bind(this);
 		this.unsubscribe = this.unsubscribe.bind(this);
 		this.getMySubscription = this.getMySubscription.bind(this);
+		this.getMyLatestNews = this.getMyLatestNews.bind(this);
 		this.getAllSubscribers = this.getAllSubscribers.bind(this);
 		this.getSubscriberById = this.getSubscriberById.bind(this);
 		this.getSubscriberByEmail = this.getSubscriberByEmail.bind(this);
@@ -127,6 +131,29 @@ export class NewsletterController {
 
 		return res.status(200).json(
 			successResponse(toNewsletterResponseDto(newsletter))
+		);
+	}
+
+	/**
+	 * GET /newsletter/my-news
+	 * Obtener ultimas noticias segun preferencias del usuario autenticado
+	 */
+	async getMyLatestNews(req: Request, res: Response): Promise<Response> {
+		const user = (req as any).user as IUser;
+		const query = res.locals.validated
+			?.query as NewsletterLatestNewsQueryRequestDto | undefined;
+
+		if (!user || !user._id) {
+			throw new AppError('Usuario no autenticado', 401, 'UNAUTHENTICATED');
+		}
+
+		const news = await this.service.getLatestNewsForUser(
+			user._id as string,
+			query?.limit
+		);
+
+		return res.status(200).json(
+			successResponse(news.map(toNewsPublicResponseDto))
 		);
 	}
 

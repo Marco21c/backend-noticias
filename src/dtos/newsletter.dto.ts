@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+
 import type { INewsletter } from '../interfaces/newsletter.interface.js';
 import type {
 	SubscribeInput,
@@ -6,6 +7,7 @@ import type {
 	NewsletterIdParam,
 	NewsletterEmailParam,
 	NewsletterCategoryParam,
+	NewsletterLatestNewsQuery,
 } from '../validations/newsletter.schemas.js';
 
 type PopulatedUser = {
@@ -34,6 +36,7 @@ export type UpdatePreferencesRequestDto = UpdatePreferencesInput;
 export type NewsletterIdRequestDto = NewsletterIdParam;
 export type NewsletterEmailRequestDto = NewsletterEmailParam;
 export type NewsletterCategoryRequestDto = NewsletterCategoryParam;
+export type NewsletterLatestNewsQueryRequestDto = NewsletterLatestNewsQuery;
 
 export type NewsletterResponseDto = {
 	id: string;
@@ -65,10 +68,6 @@ function normalizeId(id: Types.ObjectId | string | undefined): string {
 
 function isPopulatedUser(user: unknown): user is PopulatedUser {
 	return typeof user === 'object' && user !== null && 'email' in user;
-}
-
-function isPopulatedCategory(cat: unknown): cat is PopulatedCategory {
-	return typeof cat === 'object' && cat !== null && 'name' in cat;
 }
 
 function toPlainObject(

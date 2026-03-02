@@ -1,13 +1,15 @@
 import { Router } from 'express';
+
 import { userController } from '../controllers/user.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js'
 import {
   createUserSchema,
   updateUserSchema,
-  userIdParamSchema
+  userIdParamSchema,
+  paginationSchema
 } from '../validations/user.schemas.js';
-import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 
 const userRouter = Router();
 
@@ -15,6 +17,7 @@ userRouter.get(
   '/',
   authenticate,
   requireRole('admin', 'superadmin'),
+  validateRequest({ query: paginationSchema }),
   asyncHandler(userController.getUsers)
 );
 

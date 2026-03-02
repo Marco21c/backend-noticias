@@ -1,9 +1,10 @@
-import type { Request, Response, NextFunction } from 'express';
-import AuthService from '../services/auth.services.js';
-import { AppError } from '../errors/AppError.js';
-import type { LoginRequestDto, LoginResponseDto } from '../dtos/auth.dto.js';
-import { toUserResponseDto } from '../dtos/user.dto.js';
+import type { Request, Response } from 'express';
+
+import type { LoginRequestDto, LoginResponseDto, RegisterRequestDto } from '../dtos/auth.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
+import { toUserResponseDto } from '../dtos/user.dto.js';
+import { AppError } from '../errors/AppError.js';
+import AuthService from '../services/auth.services.js';
 
 /**
  * AuthController - Capa de presentación/API para autenticación
@@ -32,6 +33,24 @@ export class AuthController {
                     500,
                     'SERVER_CONFIGURATION_ERROR'
                 );
+            }
+            throw error;
+        }
+    }
+
+    async register(req: Request, res: Response): Promise<Response> {
+        const registerData = res.locals.validated.body as RegisterRequestDto;
+
+        try {
+            const result = await AuthService.register(registerData);
+            const response: LoginResponseDto = {
+                user: toUserResponseDto(result.user),
+                token: result.token
+            };
+            return res.status(201).json(successResponse(response, 'Usuario registrado exitosamente'));
+        } catch (error: any) {
+            if (error?.message === 'EMAIL_ALREADY_EXISTS') {
+                throw new AppError('El email ya está registrado', 400, 'EMAIL_ALREADY_EXISTS');
             }
             throw error;
         }
