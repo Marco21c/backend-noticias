@@ -6,7 +6,7 @@ import env from './env.js';
 
 const URI = env.NODE_ENV === 'production'
   ? env.MONGODB_URI
-  : env.MONGODB_DEV || "mongodb://localhost:1515/noticiasdb";
+  : env.MONGODB_DEV || "mongodb://localhost:27017/noticiasdb";
 
 logger.info({ mode: env.NODE_ENV }, 'Connecting to MongoDB');
 

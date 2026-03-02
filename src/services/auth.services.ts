@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions, type JwtPayload } from 'jsonwebtoken';
 
 import env from '../config/env.js';
-import type { LoginRequestDto } from '../dtos/auth.dto.js';
+import type { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
@@ -51,6 +51,42 @@ export class AuthService {
 
         // Retornar usuario sin password
         const userWithoutPassword = sanitizeUser(user);
+
+        return { user: userWithoutPassword, token };
+    }
+
+    /**
+     * Registrar un nuevo usuario (rol: user por defecto)
+     * @param registerData - Datos del usuario a registrar
+     * @throws Error si el email ya existe
+     */
+    async register(registerData: RegisterRequestDto): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
+        const { name, lastName, email, password } = registerData;
+
+        const existingUser = await this.userRepository.findByEmail(email);
+        if (existingUser) {
+            throw new Error('EMAIL_ALREADY_EXISTS');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await this.userRepository.create({
+            name,
+            lastName,
+            email,
+            password: hashedPassword,
+            role: 'user',
+        });
+
+        const token = this.signToken({
+            id: newUser._id,
+            role: newUser.role,
+            email: newUser.email,
+            name: newUser.name,
+            lastName: newUser.lastName
+        });
+
+        const userWithoutPassword = sanitizeUser(newUser);
 
         return { user: userWithoutPassword, token };
     }
