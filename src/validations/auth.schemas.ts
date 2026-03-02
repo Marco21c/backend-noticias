@@ -4,8 +4,8 @@ import { z } from 'zod';
 // SCHEMAS DE VALIDACIÓN
 // ============================================
 export const loginSchema = z.object({
-    email: z.email('Email inválido'),
-    password: z.string().min(1, 'Contraseña requerida'), // Solo verificar que existe
+    email: z.string().email('Email inválido'),
+    password: z.string().min(1, 'Contraseña requerida'),
 });
 
 // ============================================

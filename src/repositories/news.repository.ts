@@ -20,6 +20,35 @@ export class NewsRepository {
 	}
 
 	/**
+	 * Obtener todas las noticias con paginación y filtros opcionales
+	 */
+	async findAllPaginated(
+		query: any = {},
+		options: IPaginationOptions = {}
+	): Promise<IPaginatedResponse<INews>> {
+		const page = Math.max(1, options.page || 1);
+		const limit = Math.max(1, Math.min(50, options.limit || 10));
+		const skip = (page - 1) * limit;
+
+		const results = await NewsModel.find(query)
+			.sort({ publicationDate: -1, createdAt: -1 })
+			.skip(skip)
+			.limit(limit)
+			.populate('category', 'name')
+			.populate('author', 'name')
+			.exec();
+
+		const total = await NewsModel.countDocuments(query).exec();
+
+		return {
+			results,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit)
+		};
+	}
+
+	/**
 	 * Buscar noticia por ID
 	 */
 	async findById(id: string): Promise<INews | null> {
@@ -99,7 +128,7 @@ export class NewsRepository {
 	}
 
 	/**
-	 * Buscar noticias por palabra clave con coincidencia parcial.
+	 * Busca noticias por palabra clave con coincidencia parcial.
 	 *
 	 * Busca en `title`, `summary`, `content` y `highlights` usando regex.
 	 * Retorna noticias ordenadas por fecha descendente.
@@ -117,7 +146,9 @@ export class NewsRepository {
 		const limit = Math.max(1, options.limit || 10);
 		const skip = (page - 1) * limit;
 
-		const regex = new RegExp(keyword, 'i');
+		// Sanitizar keyword para evitar regex injection
+		const sanitizedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const regex = new RegExp(sanitizedKeyword, 'i');
 		const filter = {
 			$or: [
 				{ title: { $regex: regex } },

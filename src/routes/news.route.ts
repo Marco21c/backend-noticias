@@ -11,13 +11,14 @@ import {
   newsQuerySchema,
   newsByCategoryQuerySchema,
   searchNewsQuerySchema,
+  paginationQuerySchema,
 } from '../validations/news.schemas.js';
 
 const newsRouter = Router();
 
 newsRouter.get(
   '/',
-  validateRequest({ query: newsQuerySchema }),
+  validateRequest({ query: newsQuerySchema.merge(paginationQuerySchema) }),
   asyncHandler(newsController.getNews)
 );
 

@@ -1,9 +1,11 @@
+import type { IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import type {
   CreateUserInput,
   UpdateUserInput,
   UserIdParam,
-  UserEmailQuery
+  UserEmailQuery,
+  PaginationQuery
 } from '../validations/user.schemas.js';
 
 /**
@@ -29,6 +31,16 @@ export type UserIdRequestDto = UserIdParam;
  * @typedef {UserEmailQuery} UserEmailRequestDto
  */
 export type UserEmailRequestDto = UserEmailQuery;
+
+/**
+ * DTO for pagination query.
+ */
+export type PaginationRequestDto = PaginationQuery;
+
+/**
+ * DTO for paginated users response.
+ */
+export type PaginatedUsersResponseDto = IPaginatedResponse<IUser>;
 
 /**
  * User response DTO.

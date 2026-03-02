@@ -6,7 +6,8 @@ import type {
     NewsQueryRequestDto,
     NewsIdRequestDto,
     NewsByCategoryRequestDto,
-    SearchNewsRequestDto
+    SearchNewsRequestDto,
+    NewsPaginationQueryDto
 } from '../dtos/news.dto.js';
 import { toNewsResponseDto, toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
@@ -33,8 +34,22 @@ export class NewsController {
 
     async getNews(req: Request, res: Response): Promise<Response> {
         const query = res.locals.validated?.query as NewsQueryRequestDto | undefined;
-        const news = await this.newsService.getAllNews(query);
-        const payload = news.map(toNewsPublicResponseDto); // DTO público sin author.id
+        const pagination = res.locals.validated?.query as NewsPaginationQueryDto | undefined;
+        
+        const result = await this.newsService.getNewsPaginated(query, {
+            page: pagination?.page || 1,
+            limit: pagination?.limit || 10
+        });
+        
+        const payload = {
+            items: result.results.map(toNewsPublicResponseDto),
+            pagination: {
+                total: result.total,
+                page: result.page,
+                limit: pagination?.limit || 10,
+                totalPages: result.totalPages
+            }
+        };
         return res.status(200).json(successResponse(payload));
     }
 

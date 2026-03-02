@@ -15,7 +15,10 @@ Backend robusto para sistema de gestión de noticias que proporciona autenticaci
 - CRUD completo de noticias y usuarios
 - Sistema de suscripción a newsletter con preferencias por categoría
 - Filtrado por categoría, autor y estado
-- Validación de variables de entorno con Zod v4
+- Búsqueda de noticias con sanitización
+- Validación de variables de entorno con Zod
+- Rate limiting para autenticación
+- Paginación en endpoints de listado
 - Arquitectura modular (Controller → Service → Repository)
 - Configuración de CORS para múltiples entornos
 - Sistema de logging estructurado con Pino
@@ -128,7 +131,9 @@ backend-noticias/
 │   ├── interfaces/      # Interfaces TypeScript
 │   ├── middlewares/     # Middlewares
 │   │   ├── auth.middleware.ts
-│   │   └── validation.middleware.ts
+│   │   ├── validation.middleware.ts
+│   │   ├── rateLimit.middleware.ts
+│   │   └── asyncHandler.ts
 │   ├── models/          # Modelos Mongoose
 │   │   ├── category.model.ts
 │   │   ├── newsletter.model.ts
@@ -178,10 +183,11 @@ Content-Type: application/json
 
 ### Noticias
 
-#### Obtener todas las noticias
+#### Obtener todas las noticias (con paginación)
 ```http
 GET /api/news
-GET /api/news?category=technology
+GET /api/news?page=1&limit=10
+GET /api/news?status=published&page=1&limit=10
 GET /api/news?author=authorId
 GET /api/news?status=published
 ```
@@ -220,13 +226,30 @@ DELETE /api/news/:id
 Authorization: Bearer <token>
 ```
 
-### Usuarios (solo Superadmin)
+### Usuarios (solo Admin/Superadmin)
 
-#### Obtener todos los usuarios
+#### Obtener todos los usuarios (con paginación)
 ```http
 GET /api/users
+GET /api/users?page=1&limit=10
 Authorization: Bearer <token>
 ```
+
+> **Respuesta paginada**: Los endpoints de listado devuelven un objeto con `items` y `pagination`:
+> ```json
+> {
+>   "success": true,
+>   "data": {
+>     "items": [...],
+>     "pagination": {
+>       "total": 100,
+>       "page": 1,
+>       "limit": 10,
+>       "totalPages": 10
+>     }
+>   }
+> }
+> ```
 
 #### Crear usuario
 ```http
@@ -376,11 +399,14 @@ El sistema implementa cuatro niveles de acceso:
 - Contraseñas encriptadas con bcrypt
 - Autenticación mediante JWT
 - Tokens con expiración configurable
+- Rate limiting en autenticación (5 intentos cada 15 minutos)
+- Rate limiting general (100 solicitudes cada 15 minutos)
 - Middleware de autenticación para rutas protegidas
 - Validación de roles para endpoints sensibles
 - CORS configurado para orígenes específicos
 - Validación de autor en edición/eliminación de noticias
 - Protección contra creación de usuarios superadmin vía API
+- Sanitización de parámetros de búsqueda
 
 ## Calidad de Código
 
@@ -432,9 +458,10 @@ logger.debug({ data }, 'Mensaje de debug');
 - bcryptjs ^3.0.3
 
 ### Validación y Configuración
-- Zod ^4.3.5
+- Zod ^3.24.0
 - dotenv ^17.2.3
 - cors ^2.8.5
+- express-rate-limit ^7.x
 
 ### Logging y Calidad de Código
 - pino ^10.3.1

@@ -1,3 +1,4 @@
+import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import UserModel from '../models/user.model.js';
 
@@ -23,6 +24,36 @@ export class UserRepository {
 			query.select(selectFields);
 		}
 		return query.exec();
+	}
+
+	/**
+	 * Retrieves paginated users from the database.
+	 * @param options - Pagination options (page, limit)
+	 * @param selectFields - Optional fields to select (e.g., '-password')
+	 * @returns Paginated response with users
+	 */
+	async findAllPaginated(
+		options: IPaginationOptions,
+		selectFields?: string
+	): Promise<IPaginatedResponse<IUser>> {
+		const page = Math.max(1, options.page || 1);
+		const limit = Math.max(1, Math.min(100, options.limit || 10));
+		const skip = (page - 1) * limit;
+
+		const query = UserModel.find();
+		if (selectFields) {
+			query.select(selectFields);
+		}
+
+		const results = await query.skip(skip).limit(limit).sort({ createdAt: -1 }).exec();
+		const total = await UserModel.countDocuments().exec();
+
+		return {
+			results,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit)
+		};
 	}
 
 	/**

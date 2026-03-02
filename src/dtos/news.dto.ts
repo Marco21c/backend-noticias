@@ -1,11 +1,13 @@
 import type { INews } from '../interfaces/news.interface.js';
+import type { IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import type {
   CreateNewsInput,
   UpdateNewsInput,
   NewsQuery,
   NewsIdParam,
   NewsByCategoryQuery,
-  SearchNewsQuery
+  SearchNewsQuery,
+  PaginationQuery
 } from '../validations/news.schemas.js';
 
 export type CreateNewsRequestDto = CreateNewsInput;
@@ -14,6 +16,8 @@ export type NewsQueryRequestDto = NewsQuery;
 export type NewsIdRequestDto = NewsIdParam;
 export type NewsByCategoryRequestDto = NewsByCategoryQuery;
 export type SearchNewsRequestDto = SearchNewsQuery;
+export type NewsPaginationQueryDto = PaginationQuery;
+export type PaginatedNewsResponseDto = IPaginatedResponse<INews>;
 
 export type NewsReferenceDto = {
   id?: string;

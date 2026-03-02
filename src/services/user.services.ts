@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 
 import type { CreateUserRequestDto, UpdateUserRequestDto } from '../dtos/user.dto.js';
 import { sanitizeUser } from '../helpers/sanitizeUser.js';
+import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import type { IUser } from '../interfaces/user.interface.js';
 import { UserRepository } from '../repositories/user.repository.js';
 
@@ -22,6 +23,15 @@ export class UserService {
      */
     async getAllUsers(): Promise<IUser[]> {
         return this.userRepository.findAll('-password');
+    }
+
+    /**
+     * Obtener usuarios paginados (sin password)
+     */
+    async getUsersPaginated(
+        options: IPaginationOptions
+    ): Promise<IPaginatedResponse<IUser>> {
+        return this.userRepository.findAllPaginated(options, '-password');
     }
 
     /**

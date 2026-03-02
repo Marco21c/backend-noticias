@@ -43,7 +43,7 @@ export const newsletterIdParamSchema = z.object({
  * Schema para búsqueda por email
  */
 export const newsletterEmailParamSchema = z.object({
-	email: z.email('Email inválido'),
+	email: z.string().email('Email inválido'),
 });
 
 /**

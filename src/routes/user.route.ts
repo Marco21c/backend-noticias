@@ -7,7 +7,8 @@ import { validateRequest } from '../middlewares/validation.middleware.js'
 import {
   createUserSchema,
   updateUserSchema,
-  userIdParamSchema
+  userIdParamSchema,
+  paginationSchema
 } from '../validations/user.schemas.js';
 
 const userRouter = Router();
@@ -16,6 +17,7 @@ userRouter.get(
   '/',
   authenticate,
   requireRole('admin', 'superadmin'),
+  validateRequest({ query: paginationSchema }),
   asyncHandler(userController.getUsers)
 );
 

@@ -8,7 +8,7 @@ import type {
 import { AppError } from '../errors/AppError.js';
 import { cleanUndefined } from '../helpers/cleanUndefined.js';
 import type { INews } from '../interfaces/news.interface.js';
-import type { IPaginatedResponse } from '../interfaces/pagination.interface.js';
+import type { IPaginationOptions, IPaginatedResponse } from '../interfaces/pagination.interface.js';
 import { NewsRepository } from '../repositories/news.repository.js';
 
 /**
@@ -57,6 +57,30 @@ export class NewsService {
     }
 
     return this.newsRepository.findAll(query);
+  }
+
+  /**
+   * Obtiene todas las noticias con paginación y filtros opcionales.
+   */
+  async getNewsPaginated(
+    filters?: NewsQueryRequestDto,
+    options?: IPaginationOptions
+  ): Promise<IPaginatedResponse<INews>> {
+    const query: any = {};
+
+    if (filters?.status) {
+      query.status = filters.status;
+    }
+
+    if (filters?.author) {
+      try {
+        query.author = new Types.ObjectId(filters.author);
+      } catch {
+        return { results: [], total: 0, page: 1, totalPages: 0 };
+      }
+    }
+
+    return this.newsRepository.findAllPaginated(query, options);
   }
 
   /**

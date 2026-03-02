@@ -9,7 +9,6 @@ const URI = env.NODE_ENV === 'production'
   : env.MONGODB_DEV || "mongodb://localhost:1515/noticiasdb";
 
 logger.info({ mode: env.NODE_ENV }, 'Connecting to MongoDB');
-logger.debug({ uri: URI?.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') }, 'MongoDB URI');
 
 mongoose
   .connect(URI!)
