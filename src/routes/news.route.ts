@@ -43,7 +43,7 @@ newsRouter.get(
 newsRouter.post(
   '/',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ body: createNewsSchema }),
   asyncHandler(newsController.createNews)
 );
@@ -51,7 +51,7 @@ newsRouter.post(
 newsRouter.put(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ params: newsIdParamSchema, body: updateNewsSchema }),
   asyncHandler(newsController.editNews)
 );
@@ -59,7 +59,7 @@ newsRouter.put(
 newsRouter.delete(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin'),
+  requireRole('editor', 'admin', 'superadmin'),
   validateRequest({ params: newsIdParamSchema }),
   asyncHandler(newsController.deleteNews)
 );
