@@ -11,13 +11,16 @@ import type {
 import { toNewsResponseDto, toNewsPublicResponseDto } from '../dtos/news.dto.js';
 import { successResponse } from '../dtos/response.dto.js';
 import { AppError } from '../errors/AppError.js';
+import { CategoryService } from '../services/category.services.js';
 import { NewsService } from '../services/news.services.js';
 
 export class NewsController {
     private newsService: NewsService;
+    private categoryService: CategoryService;
 
-    constructor(newsService?: NewsService) {
+    constructor(newsService?: NewsService, categoryService?: CategoryService) {
         this.newsService = newsService || new NewsService();
+        this.categoryService = categoryService || new CategoryService();
         
         this.getNews = this.getNews.bind(this);
         this.createNews = this.createNews.bind(this);
@@ -63,16 +66,19 @@ export class NewsController {
 
     async getNewsByCategory(req: Request, res: Response): Promise<Response> {
         const { category } = res.locals.validated.query as NewsByCategoryRequestDto;
-        const news = await this.newsService.getNewsByCategory(category);
-
-        if (!news || news.length === 0) {
+        
+        // Validar que la categoría existe
+        const categoryExists = await this.categoryService.getCategoryById(category);
+        if (!categoryExists) {
             throw new AppError(
-                'No se encontraron noticias para esta categoria', 
+                'Categoría no encontrada', 
                 404, 
-                'NEWS_CATEGORY_NOT_FOUND'
+                'CATEGORY_NOT_FOUND'
             );
         }
-
+        
+        // Buscar noticias de la categoría (puede ser array vacío)
+        const news = await this.newsService.getNewsByCategory(category);
         const payload = news.map(toNewsPublicResponseDto); // DTO público
         return res.status(200).json(successResponse(payload));
     }
