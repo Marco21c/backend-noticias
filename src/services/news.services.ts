@@ -61,14 +61,21 @@ export class NewsService {
 
   /**
    * Obtiene todas las noticias con paginación y filtros opcionales.
+   * Para usuarios sin rol admin, solo devuelve noticias publicadas.
    */
   async getNewsPaginated(
     filters?: NewsQueryRequestDto,
-    options?: IPaginationOptions
+    options?: IPaginationOptions,
+    userRole?: string
   ): Promise<IPaginatedResponse<INews>> {
     const query: any = {};
 
-    if (filters?.status) {
+    // Si el usuario no es admin/superadmin/editor, forzar status=published
+    const isAdmin = userRole === 'admin' || userRole === 'superadmin' || userRole === 'editor';
+    if (!isAdmin) {
+      query.status = 'published';
+    } else if (filters?.status) {
+      // Si es admin y especifica status en el filtro, respetarlo
       query.status = filters.status;
     }
 
