@@ -19,14 +19,20 @@ export class UserService {
     }
 
     /**
-     * Obtener todos los usuarios (sin password)
+     * Obtiene el listado completo de todos los usuarios registrados activos.
+     * Retorna la información sanitizada (sin el password).
+     * 
+     * @returns {Promise<IUser[]>} Arreglo con todos los usuarios.
      */
     async getAllUsers(): Promise<IUser[]> {
         return this.userRepository.findAll('-password');
     }
 
     /**
-     * Obtener usuarios paginados (sin password)
+     * Obtiene los usuarios de forma paginada para listar eficientemente.
+     * 
+     * @param {IPaginationOptions} options Limit, sort, u offsets de mongo.
+     * @returns {Promise<IPaginatedResponse<IUser>>} Objeto de paginación de usuarios
      */
     async getUsersPaginated(
         options: IPaginationOptions
@@ -35,23 +41,33 @@ export class UserService {
     }
 
     /**
-     * Obtener usuario por ID (sin password)
+     * Extrae un usuario de base de datos directamente por ID ignorando el hash.
+     * 
+     * @param {string} id ID unico que identifica a un usuario en Mongo.
+     * @returns {Promise<IUser | null>} Usuario u objeto nulo si no existe
      */
     async getUserById(id: string): Promise<IUser | null> {
         return this.userRepository.findById(id, '-password');
     }
 
     /**
-     * Obtener usuario por email (con password para autenticación)
+     * Busca a un empleado / lector por email para el primer paso del login.
+     * (Retorna un Iuser CON el password expuesto listo para ser comparado).
+     * 
+     * @param {string} email El email del usuario entrante
+     * @returns {Promise<IUser | null>}
      */
     async getUserByEmail(email: string): Promise<IUser | null> {
         return this.userRepository.findByEmail(email);
     }
 
     /**
-     * Crear un nuevo usuario
-     * @param userData - Datos validados por Zod (futuro: CreateUserDto)
-     * Aplica reglas de negocio: bloqueo de superadmin, email único, hasheo
+     * Crea un nuevo usuario validando existencia y reglas de roles.
+     * 
+     * @param {CreateUserRequestDto} userData DTO (generalmente de endpoint HTTP) con el body limipio de la creación.
+     * @throws {Error} FORBIDDEN_ROLE si el usuario pide crearse como superadmin
+     * @throws {Error} EMAIL_DUPLICATE si ya existe alguien con este correo
+     * @returns {Promise<IUser>} Nuevo usuario creado.
      */
     async createUser(userData: CreateUserRequestDto): Promise<IUser> {
         const { password, role, email, ...rest } = userData;
@@ -78,10 +94,12 @@ export class UserService {
     }
 
     /**
-     * Actualizar un usuario existente
-     * @param id - ID del usuario a actualizar
-     * @param updateData - Datos validados por Zod (futuro: UpdateUserDto)
-     * Aplica reglas de negocio: bloqueo de superadmin, email único
+     * Actualiza información referencial de un usuario por su Mongo ID.
+     * 
+     * @param {string} id Referencia mongo `_id` de este usuario
+     * @param {UpdateUserRequestDto} updateData Object de validaciones Parcial (Zod)
+     * @throws {Error} EMAIL_DUPLICATE en update o FORBIDDEN_ROLE si lo pide a superadmin
+     * @returns {Promise<IUser | null>} Objeto nuevo sanitizado.
      */
     async updateUser(id: string, updateData: UpdateUserRequestDto): Promise<IUser | null> {
         const { password, role, email, ...rest } = updateData;
@@ -120,7 +138,10 @@ export class UserService {
     }
 
     /**
-     * Eliminar un usuario
+     * Baja permanente del sistema.
+     * 
+     * @param {string} id ID unico del target en DB
+     * @returns {Promise<IUser | null>}
      */
     async deleteUser(id: string): Promise<IUser | null> {
         return this.userRepository.delete(id);

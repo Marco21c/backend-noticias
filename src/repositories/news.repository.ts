@@ -133,7 +133,7 @@ export class NewsRepository {
 	 * Busca en `title`, `summary`, `content` y `highlights` usando regex.
 	 * Retorna noticias ordenadas por fecha descendente.
 	 *
-	 * @param keyword - Palabra clave a buscar (ya sanitizada)
+	 * @param keyword - Palabra clave a buscar (ya sanitizada por el servicio)
 	 * @param options - Opciones de paginación
 	 * @returns Noticias ordenadas por fecha descendente
 	 */
@@ -146,10 +146,11 @@ export class NewsRepository {
 		const limit = Math.max(1, options.limit || 10);
 		const skip = (page - 1) * limit;
 
-		// Sanitizar keyword para evitar regex injection
-		const sanitizedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		const regex = new RegExp(sanitizedKeyword, 'i');
+		// El keyword ya viene sanitizado por el servicio con soporte a acentos
+		// No re-sanitizar para evitar romper el patrón de caracteres
+		const regex = new RegExp(keyword, 'i');
 		const filter = {
+			status: 'published',
 			$or: [
 				{ title: { $regex: regex } },
 				{ summary: { $regex: regex } },

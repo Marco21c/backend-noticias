@@ -32,14 +32,20 @@ export class NewsController {
         this.deleteNews = this.deleteNews.bind(this);
     }
 
+    /**
+     * @route GET /api/news
+     * @description Obtiene el listado paginado de noticias. Permite filtros de búsqueda avanzados.
+     * @returns {Promise<Response>} 200 - Colección paginada de resultados de noticias (DTO público)
+     */
     async getNews(req: Request, res: Response): Promise<Response> {
         const query = res.locals.validated?.query as NewsQueryRequestDto | undefined;
         const pagination = res.locals.validated?.query as NewsPaginationQueryDto | undefined;
+        const userRole = (req as any).user?.role;
         
         const result = await this.newsService.getNewsPaginated(query, {
             page: pagination?.page || 1,
             limit: pagination?.limit || 10
-        });
+        }, userRole);
         
         const payload = {
             items: result.results.map(toNewsPublicResponseDto),
@@ -53,12 +59,24 @@ export class NewsController {
         return res.status(200).json(successResponse(payload));
     }
 
+    /**
+     * @route POST /api/news
+     * @description Crea un reporte de noticia asociado al usuario en sesión. Procesa imágenes multer-storage.
+     * @throws {AppError} 401 si no hay sesión.
+     * @returns {Promise<Response>} 201 - DTO del reporte guardado
+     */
     async createNews(req: Request, res: Response): Promise<Response> {
         const newsData = res.locals.validated.body as CreateNewsRequestDto;
         const user = (req as any).user;
         
         if (!user || !user._id) {
             throw new AppError('Usuario no autenticado', 401, 'UNAUTHENTICATED');
+        }
+
+        if (req.file) {
+            const host = req.get('host') || 'localhost:3000';
+            const protocol = req.protocol;
+            newsData.mainImage = `${protocol}://${host}/uploads/${req.file.filename}`;
         }
         
         const newNews = await this.newsService.createNews(newsData, user._id);
@@ -68,6 +86,12 @@ export class NewsController {
             .json(successResponse(payload, 'Noticia creada exitosamente'));
     }
 
+    /**
+     * @route GET /api/news/:id
+     * @description Devuelve una Noticia por ID de MongoDB.
+     * @throws {AppError} 404 - Noticia no Encontrada
+     * @returns {Promise<Response>} 200 - DTO Público de Noticia
+     */
     async getNewsById(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as NewsIdRequestDto;
         const news = await this.newsService.getNewsById(id);
@@ -79,6 +103,12 @@ export class NewsController {
         return res.status(200).json(successResponse(toNewsPublicResponseDto(news))); // DTO público
     }
 
+    /**
+     * @route GET /api/news/category
+     * @description Extrae todas las noticias filtrando implícitamente por el Query Parameter `category`.
+     * @throws {AppError} 404 - Si la categoría es inválida o no existe en la base de datos.
+     * @returns {Promise<Response>} 200 - Colección de DTOs Públicos
+     */
     async getNewsByCategory(req: Request, res: Response): Promise<Response> {
         const { category } = res.locals.validated.query as NewsByCategoryRequestDto;
         
@@ -98,6 +128,11 @@ export class NewsController {
         return res.status(200).json(successResponse(payload));
     }
 
+    /**
+     * @route GET /api/news/search
+     * @description Ejecuta una consulta de regex parcial tolerante a acentos sobre el cuerpo y título de noticias.
+     * @returns {Promise<Response>} 200 - Paginación customizada de respuestas de búsqueda.
+     */
     async searchNews(req: Request, res: Response): Promise<Response> {
         const { q, page, limit } = res.locals.validated.query as SearchNewsRequestDto;
         
@@ -126,10 +161,22 @@ export class NewsController {
         );
     }
 
+    /**
+     * @route PUT /api/news/:id
+     * @description Edita una noticia por ID en DB solo si el solicitante es el dueño o admin/superadmin.
+     * @throws {AppError} 403 - No tiene permisos
+     * @returns {Promise<Response>} 200 - DTO Privado Modificado
+     */
     async editNews(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as NewsIdRequestDto;
         const newsData = res.locals.validated.body as UpdateNewsRequestDto;
         const user = (req as any).user;
+
+        if (req.file) {
+            const host = req.get('host') || 'localhost:3000';
+            const protocol = req.protocol;
+            newsData.mainImage = `${protocol}://${host}/uploads/${req.file.filename}`;
+        }
 
         const edited = await this.newsService.editNews(
             id,
@@ -144,6 +191,12 @@ export class NewsController {
             .json(successResponse(payload, 'Noticia actualizada exitosamente'));
     }
 
+    /**
+     * @route DELETE /api/news/:id
+     * @description Elimina el documento de manera física. Requerimientos RBAC de editNews aplicados.
+     * @throws {AppError} 403 - No tiene permisos
+     * @returns {Promise<Response>} 200 - DTO de la noticia eliminada.
+     */
     async deleteNews(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as NewsIdRequestDto;
         const user = (req as any).user;

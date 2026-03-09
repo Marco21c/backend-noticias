@@ -120,6 +120,13 @@ export class AuthService {
         return jwt.verify(token, secret);
     }
 
+    /**
+     * Resuelve el objeto de usuario completo (sin la contraseña) a partir de un token JWT en texto plano.
+     * Se usa comúnmente en middlewares de autorización para inyectar el usuario logueado en Express Local.
+     * 
+     * @param token - Token JWT crudo.
+     * @returns Una promesa que resuelve al usuario encontrado Omit<IUser, 'password'> o null si el token expiró/usuario no existe.
+     */
     async getUserFromToken(token: string): Promise<Omit<IUser, 'password'> | null> {
         try {
             const decoded = this.verifyToken(token) as JwtPayload;

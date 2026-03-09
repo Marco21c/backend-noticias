@@ -4,6 +4,7 @@ import { newsletterController } from '../controllers/newsletter.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
+import { USER_ROLES } from '../utils/roles.js';
 import {
 	subscribeSchema,
 	updatePreferencesSchema,
@@ -27,7 +28,7 @@ const newsletterRouter = Router();
 newsletterRouter.post(
 	'/subscribe',
 	authenticate,
-	requireRole('user', 'editor', 'admin', 'superadmin'),
+	requireRole(USER_ROLES.USER, USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ body: subscribeSchema }),
 	asyncHandler(newsletterController.subscribe)
 );
@@ -40,7 +41,7 @@ newsletterRouter.post(
 newsletterRouter.put(
 	'/preferences',
 	authenticate,
-	requireRole('user', 'editor', 'admin', 'superadmin'),
+	requireRole(USER_ROLES.USER, USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ body: updatePreferencesSchema }),
 	asyncHandler(newsletterController.updatePreferences)
 );
@@ -53,7 +54,7 @@ newsletterRouter.put(
 newsletterRouter.delete(
 	'/unsubscribe',
 	authenticate,
-	requireRole('user', 'editor', 'admin', 'superadmin'),
+	requireRole(USER_ROLES.USER, USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	asyncHandler(newsletterController.unsubscribe)
 );
 
@@ -65,7 +66,7 @@ newsletterRouter.delete(
 newsletterRouter.get(
 	'/my-subscription',
 	authenticate,
-	requireRole('user', 'editor', 'admin', 'superadmin'),
+	requireRole(USER_ROLES.USER, USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	asyncHandler(newsletterController.getMySubscription)
 );
 
@@ -77,7 +78,7 @@ newsletterRouter.get(
 newsletterRouter.get(
 	'/my-news',
 	authenticate,
-	requireRole('user', 'editor', 'admin', 'superadmin'),
+	requireRole(USER_ROLES.USER, USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ query: newsletterLatestNewsQuerySchema }),
 	asyncHandler(newsletterController.getMyLatestNews)
 );
@@ -94,7 +95,7 @@ newsletterRouter.get(
 newsletterRouter.get(
 	'/admin/subscribers',
 	authenticate,
-	requireRole('admin', 'superadmin'),
+	requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	asyncHandler(newsletterController.getAllSubscribers)
 );
 
@@ -106,7 +107,7 @@ newsletterRouter.get(
 newsletterRouter.get(
 	'/admin/subscribers/:id',
 	authenticate,
-	requireRole('admin', 'superadmin'),
+	requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ params: newsletterIdParamSchema }),
 	asyncHandler(newsletterController.getSubscriberById)
 );
@@ -119,7 +120,7 @@ newsletterRouter.get(
 newsletterRouter.get(
 	'/admin/subscribers/email/:email',
 	authenticate,
-	requireRole('admin', 'superadmin'),
+	requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ params: newsletterEmailParamSchema }),
 	asyncHandler(newsletterController.getSubscriberByEmail)
 );
@@ -132,7 +133,7 @@ newsletterRouter.get(
 newsletterRouter.get(
 	'/admin/subscribers/category/:categoryId',
 	authenticate,
-	requireRole('admin', 'superadmin'),
+	requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
 	validateRequest({ params: newsletterCategoryParamSchema }),
 	asyncHandler(newsletterController.getSubscribersByCategory)
 );

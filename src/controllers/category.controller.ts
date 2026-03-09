@@ -28,12 +28,23 @@ export class CategoryController {
         this.deleteCategory = this.deleteCategory.bind(this);
     }
 
+    /**
+     * @route GET /api/categories
+     * @description Obtiene el listado de todas las categorías activas e inactivas.
+     * @returns {Promise<Response>} 200 - Array de Categorias DTO.
+     */
     async getCategories(_req: Request, res: Response): Promise<Response> {
         const categories = await this.categoryService.getAllCategories();
         const payload = categories.map(toCategoryResponseDto);
         return res.status(200).json(successResponse(payload));
     }
 
+    /**
+     * @route POST /api/categories
+     * @description Crea una nueva categoría en la base de datos (Requiere RBAC).
+     * @throws {AppError} 409 - CATEGORY_NAME_DUPLICATE
+     * @returns {Promise<Response>} 201 - Nueva Categoría DTO creada.
+     */
     async createCategory(req: Request, res: Response): Promise<Response> {
         const categoryData = res.locals.validated.body as CreateCategoryRequestDto;
 
@@ -52,6 +63,12 @@ export class CategoryController {
         }
     }
 
+    /**
+     * @route GET /api/categories/:id
+     * @description Obtiene una categoría específica mediante su mongo ID.
+     * @throws {AppError} 404 - CATEGORY_NOT_FOUND
+     * @returns {Promise<Response>} 200 - Categoría DTO encontrada.
+     */
     async getCategoryById(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as CategoryIdRequestDto;
 
@@ -63,6 +80,13 @@ export class CategoryController {
         return res.status(200).json(successResponse(toCategoryResponseDto(category)));
     }
 
+    /**
+     * @route PUT /api/categories/:id
+     * @description Edita una categoría existente.
+     * @throws {AppError} 404 - CATEGORY_NOT_FOUND
+     * @throws {AppError} 409 - CATEGORY_NAME_DUPLICATE
+     * @returns {Promise<Response>} 200 - Categoría DTO actualizada.
+     */
     async editCategory(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as CategoryIdRequestDto;
         const categoryData = res.locals.validated.body as UpdateCategoryRequestDto;
@@ -86,6 +110,12 @@ export class CategoryController {
         }
     }
 
+    /**
+     * @route DELETE /api/categories/:id
+     * @description Elimina permanentemente una categoría del sistema.
+     * @throws {AppError} 404 - CATEGORY_NOT_FOUND
+     * @returns {Promise<Response>} 200 - Categoría DTO eliminada.
+     */
     async deleteCategory(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as CategoryIdRequestDto;
 

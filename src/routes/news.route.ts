@@ -3,7 +3,9 @@ import { Router } from 'express';
 import { newsController } from '../controllers/news.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
+import { uploadImage } from '../middlewares/upload.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
+import { USER_ROLES } from '../utils/roles.js';
 import {
   createNewsSchema,
   updateNewsSchema,
@@ -43,7 +45,8 @@ newsRouter.get(
 newsRouter.post(
   '/',
   authenticate,
-  requireRole('editor', 'admin', 'superadmin'),
+  requireRole(USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
+  uploadImage.single('mainImage'),
   validateRequest({ body: createNewsSchema }),
   asyncHandler(newsController.createNews)
 );
@@ -51,7 +54,8 @@ newsRouter.post(
 newsRouter.put(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin', 'superadmin'),
+  requireRole(USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
+  uploadImage.single('mainImage'),
   validateRequest({ params: newsIdParamSchema, body: updateNewsSchema }),
   asyncHandler(newsController.editNews)
 );
@@ -59,7 +63,7 @@ newsRouter.put(
 newsRouter.delete(
   '/:id',
   authenticate,
-  requireRole('editor', 'admin', 'superadmin'),
+  requireRole(USER_ROLES.EDITOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ params: newsIdParamSchema }),
   asyncHandler(newsController.deleteNews)
 );
