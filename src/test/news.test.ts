@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, it, expect } from 'vitest';
 
-import app from '../index.js'; // Importamos el server express
+import app from '../../index.js'; // Importamos el server express
 
 // Conectamos a una BD local en memoria o a la URI de QA real.
 // Para este entorno, probamos solo la estructura de routing y controlador con la BD de desarollo actual.
@@ -25,7 +25,8 @@ describe('News API Integrations', () => {
       
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty('code');
+      expect(response.body).toHaveProperty('message');
     });
 
   });
