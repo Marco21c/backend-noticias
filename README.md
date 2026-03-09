@@ -17,11 +17,12 @@ Backend robusto para sistema de gestión de noticias que proporciona autenticaci
 - Filtrado por categoría, autor y estado
 - Búsqueda de noticias con sanitización
 - Validación de variables de entorno con Zod
-- Rate limiting para autenticación
+- Subida y almacenamiento robusto de imágenes locales con Multer (`multipart/form-data`)
 - Paginación en endpoints de listado
-- Arquitectura modular (Controller → Service → Repository)
+- Arquitectura modular (Controller → Service → Repository) totalmente documentada con JSDoc
 - Configuración de CORS para múltiples entornos
 - Sistema de logging estructurado con Pino
+- Testing Unitario y de Integración con Vitest + Supertest
 - Linting con ESLint y TypeScript
 
 ## Requisitos Previos
@@ -89,6 +90,7 @@ npm run create-superadmin
 - `npm run dev` - Inicia el servidor en modo desarrollo con hot reload
 - `npm run build` - Compila el proyecto TypeScript
 - `npm start` - Inicia el servidor en producción
+- `npm run test` - Ejecuta la suite de pruebas unitarias y de integración (Vitest)
 - `npm run create-superadmin` - Crea usuario superadmin
 - `npm run delete-superadmin` - Elimina usuario superadmin
 - `npm run type-check` - Verifica tipos TypeScript
@@ -144,7 +146,9 @@ backend-noticias/
 │   ├── scripts/         # Scripts de utilidad
 │   │   ├── createSuperAdmin.ts
 │   │   └── deleteSuperAdmin.ts
-│   ├── services/        # Lógica de negocio
+│   ├── services/        # Lógica de negocio (Documentada en JSDoc)
+│   ├── test/            # Pruebas de integración
+│   │   └── news.test.ts # Tests de endpoints con Supertest
 │   ├── utils/           # Utilidades
 │   │   └── logger.ts    # Sistema de logging con Pino
 │   └── validations/     # Schemas de validación Zod
@@ -201,17 +205,15 @@ GET /api/news/:id
 ```http
 POST /api/news
 Authorization: Bearer <token>
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-  "title": "Título de la noticia",
-  "slug": "titulo-de-la-noticia",
-  "summary": "Resumen",
-  "content": "Contenido completo",
-  "category": "technology",
-  "variant": "default",
-  "status": "published"
-}
+title: "Título de la noticia"
+summary: "Resumen"
+content: "Contenido completo"
+category: "technology"
+variant: "default"
+status: "published"
+mainImage: (File Binario)
 ```
 
 #### Actualizar noticia (requiere autenticación)
@@ -369,7 +371,7 @@ Authorization: Bearer <token>
 | `category` | Enum | Sí | Categoría |
 | `variant` | Enum | Sí | highlighted, featured, default |
 | `status` | Enum | No | draft, published |
-| `mainImage` | String | No | URL de imagen |
+| `mainImage` | Archivo | No | Almacenado físicamente usando Multer (`url gen`) |
 | `source` | String | No | Fuente |
 | `publicationDate` | Date | No | Fecha de publicación |
 
@@ -456,6 +458,13 @@ logger.debug({ data }, 'Mensaje de debug');
 ### Autenticación y Seguridad
 - jsonwebtoken ^9.0.3
 - bcryptjs ^3.0.3
+
+### Manejo de Archivos
+- multer ^1.4.5-lts.1
+
+### Testing
+- vitest ^3.0.7
+- supertest ^7.0.0
 
 ### Validación y Configuración
 - Zod ^3.24.0

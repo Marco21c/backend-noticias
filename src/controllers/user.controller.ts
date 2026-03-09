@@ -31,6 +31,11 @@ export class UserController {
         this.deleteUser = this.deleteUser.bind(this);
     }
 
+    /**
+     * @route GET /api/user
+     * @description Obtiene todos los usuarios paginados del sistema.
+     * @returns {Promise<Response>} 200 - Lista paginada de Usuarios DTO
+     */
     async getUsers(req: Request, res: Response): Promise<Response> {
         const query = res.locals.validated?.query as PaginationRequestDto | undefined;
         const result = await this.userService.getUsersPaginated({
@@ -49,6 +54,13 @@ export class UserController {
         return res.status(200).json(successResponse(payload));
     }
 
+    /**
+     * @route POST /api/user
+     * @description Crea un nuevo usuario validando existencia por email.
+     * @throws {AppError} 403 - FORBIDDEN_ROLE
+     * @throws {AppError} 409 - EMAIL_DUPLICATE
+     * @returns {Promise<Response>} 201 - Usuario DTO recién creado
+     */
     async createUser(req: Request, res: Response): Promise<Response> {
         const userData = res.locals.validated.body as CreateUserRequestDto;
 
@@ -74,6 +86,12 @@ export class UserController {
         }
     }
 
+    /**
+     * @route GET /api/user/:id
+     * @description Obtiene el modelo de un usuario específico.
+     * @throws {AppError} 404 - USER_NOT_FOUND
+     * @returns {Promise<Response>} 200 - Usuario DTO.
+     */
     async getUserById(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as UserIdRequestDto;
         
@@ -85,6 +103,12 @@ export class UserController {
         return res.status(200).json(successResponse(toUserResponseDto(user)));
     }
 
+    /**
+     * @route GET /api/user/email
+     * @description Busca un usuario utilizando el mail.
+     * @throws {AppError} 404 - USER_NOT_FOUND
+     * @returns {Promise<Response>} 200 - Usuario DTO.
+     */
     async getUserByEmail(req: Request, res: Response): Promise<Response> {
         const { email } = res.locals.validated.query as UserEmailRequestDto;
         
@@ -96,6 +120,14 @@ export class UserController {
         return res.status(200).json(successResponse(toUserResponseDto(user)));
     }
 
+    /**
+     * @route PUT /api/user/:id
+     * @description Actualiza roles, passwords u otros datos del usuario.
+     * @throws {AppError} 404 - USER_NOT_FOUND
+     * @throws {AppError} 403 - FORBIDDEN_ROLE
+     * @throws {AppError} 409 - EMAIL_DUPLICATE
+     * @returns {Promise<Response>} 200 - Usuario actualizado DTO
+     */
     async editUser(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as UserIdRequestDto;
         const userData = res.locals.validated.body as UpdateUserRequestDto;
@@ -126,6 +158,12 @@ export class UserController {
         }
     }
 
+    /**
+     * @route DELETE /api/user/:id
+     * @description Borrado permanente de usuario.
+     * @throws {AppError} 404 - USER_NOT_FOUND
+     * @returns {Promise<Response>} 200 - Usuario eliminado DTO.
+     */
     async deleteUser(req: Request, res: Response): Promise<Response> {
         const { id } = res.locals.validated.params as UserIdRequestDto;
         

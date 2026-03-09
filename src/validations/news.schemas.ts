@@ -25,9 +25,14 @@ export const createNewsSchema = z.object({
   slug: z.string().min(3, 'Slug demasiado corto'),
   summary: z.string().min(10, 'Resumen demasiado corto'),
   content: z.string().min(20, 'Contenido demasiado corto'),
-  highlights: z.array(z.string().min(1)).default([]),
+  highlights: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return [val]; }
+    }
+    return val;
+  }, z.array(z.string().min(1)).default([])),
   category: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID de categoría inválido'),
-  mainImage: z.string().url('URL de imagen inválida').optional(),
+  mainImage: z.string().optional(),
   source: z.string().optional(),
   variant: z.enum(['highlighted', 'featured', 'default']).default('default'),
 });

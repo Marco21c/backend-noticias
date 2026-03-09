@@ -101,8 +101,16 @@ export class NewsService {
     newsData: CreateNewsRequestDto,
     authorId: Types.ObjectId
   ): Promise<INews> {
+    const slug = newsData.title.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9 ]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+
     const newsToCreate = cleanUndefined({
       ...newsData,
+      slug,
       author: authorId,
       status: 'draft' as const,
       publicationDate: null
@@ -191,6 +199,16 @@ export class NewsService {
     }
 
     const cleanedData = cleanUndefined(newsData) as Partial<INews>;
+
+    // Generar slug nuevamente si el título cambia
+    if (cleanedData.title) {
+        cleanedData.slug = cleanedData.title.toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9 ]/g, "")
+            .trim()
+            .replace(/\s+/g, "-");
+    }
 
     if (cleanedData.status === 'published' && !cleanedData.publicationDate) {
       cleanedData.publicationDate = new Date();

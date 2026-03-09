@@ -15,22 +15,27 @@ export class CategoryService {
     }
 
     /**
-     * Obtener todas las categorías
+     * Retorna todas las categorias activas/inactivas sin filtros
+     * @returns {Promise<ICategory[]>} Lista completa de categorias
      */
     async getAllCategories(): Promise<ICategory[]> {
         return this.categoryRepository.findAll();
     }
 
     /**
-     * Obtener categoría por ID
+     * Retorna un objeto modelo de Category por su object ID
+     * @param {string} id
+     * @returns {Promise<ICategory | null>} El modelo o null si fue borrado o no existe
      */
     async getCategoryById(id: string): Promise<ICategory | null> {
         return this.categoryRepository.findById(id);
     }
 
     /**
-     * Crear una nueva categoría
-     * @param categoryData - Datos validados por Zod (futuro: CreateCategoryDto)
+     * Crea un espacio de categorias global verficando que el nombre no la pise con otra.
+     * @param {CreateCategoryRequestDto} categoryData - Zod Payload de creacion
+     * @throws {Error} NAME_DUPLICATE
+     * @returns {Promise<ICategory>} modelo de la bbdd recien inyectado
      */
     async createCategory(categoryData: CreateCategoryRequestDto): Promise<ICategory> {
         const { name, description, isActive } = categoryData;
@@ -49,9 +54,11 @@ export class CategoryService {
     }
 
     /**
-     * Editar una categoría existente
-     * @param id - ID de la categoría a actualizar
-     * @param categoryData - Datos validados por Zod (futuro: UpdateCategoryDto)
+     * Update parcial de una category verificando que el nombre reinyectado no colisione con otra.
+     * @param {string} id Mongo ID
+     * @param {UpdateCategoryRequestDto} categoryData Parametros de actualizacion como `{"isActive": false}`
+     * @throws {Error} NAME_DUPLICATE
+     * @returns {Promise<ICategory | null>} Modelo post update de la bd
      */
     async updateCategory(id: string, categoryData: UpdateCategoryRequestDto): Promise<ICategory | null> {
         // REGLA DE NEGOCIO: Nombre único (si se está actualizando)
@@ -69,7 +76,9 @@ export class CategoryService {
     }
 
     /**
-     * Eliminar una categoría
+     * Da de baja el item category completo. (Precaución, puede desatar on cascades a links sueltos).
+     * @param {string} id Unico del target
+     * @returns {Promise<ICategory | null>} Return model borrado.
      */
     async deleteCategory(id: string): Promise<ICategory | null> {
         return this.categoryRepository.delete(id);

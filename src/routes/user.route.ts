@@ -4,6 +4,7 @@ import { userController } from '../controllers/user.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js'
+import { USER_ROLES } from '../utils/roles.js';
 import {
   createUserSchema,
   updateUserSchema,
@@ -16,7 +17,7 @@ const userRouter = Router();
 userRouter.get(
   '/',
   authenticate,
-  requireRole('admin', 'superadmin'),
+  requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ query: paginationSchema }),
   asyncHandler(userController.getUsers)
 );
@@ -24,7 +25,7 @@ userRouter.get(
 userRouter.post(
   '/',
   authenticate,
-  requireRole('admin', 'superadmin'),
+  requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ body: createUserSchema }),
   asyncHandler(userController.createUser)
 );
@@ -32,7 +33,7 @@ userRouter.post(
 userRouter.get(
   '/:id',
   authenticate,
-  requireRole('admin', 'superadmin'),
+  requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ params: userIdParamSchema }),
   asyncHandler(userController.getUserById)
 );
@@ -40,7 +41,7 @@ userRouter.get(
 userRouter.put(
   '/:id',
   authenticate,
-  requireRole('admin', 'superadmin'),
+  requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ params: userIdParamSchema, body: updateUserSchema }),
   asyncHandler(userController.editUser)
 );
@@ -48,7 +49,7 @@ userRouter.put(
 userRouter.delete(
   '/:id',
   authenticate,
-  requireRole('admin', 'superadmin'),
+  requireRole(USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN),
   validateRequest({ params: userIdParamSchema }),
   asyncHandler(userController.deleteUser)
 );

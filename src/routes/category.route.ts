@@ -4,6 +4,7 @@ import { categoryController } from '../controllers/category.controller.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { authenticate, requireRole } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
+import { USER_ROLES } from '../utils/roles.js';
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -28,7 +29,7 @@ categoryRouter.get(
 categoryRouter.post(
   '/',
   authenticate,
-  requireRole('superadmin', 'admin'),
+  requireRole(USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN),
   validateRequest({ body: createCategorySchema }),
   asyncHandler(categoryController.createCategory)
 );
@@ -36,7 +37,7 @@ categoryRouter.post(
 categoryRouter.put(
   '/:id',
   authenticate,
-  requireRole('superadmin', 'admin'),
+  requireRole(USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN),
   validateRequest({ params: categoryIdParamSchema, body: updateCategorySchema }),
   asyncHandler(categoryController.editCategory)
 );
@@ -44,7 +45,7 @@ categoryRouter.put(
 categoryRouter.delete(
   '/:id',
   authenticate,
-  requireRole('superadmin', 'admin'),
+  requireRole(USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN),
   validateRequest({ params: categoryIdParamSchema }),
   asyncHandler(categoryController.deleteCategory)
 );
