@@ -4,8 +4,8 @@ import cors from 'cors';
 import express from 'express';
 
 import corsOptions from './src/config/cors.js';
+import { connectDB } from './src/config/database.js';
 import env from './src/config/env.js';
-import './src/config/database.js';
 import { initializeSystem } from './src/config/initialSetup.js';
 import { notFound, errorHandler } from './src/middlewares/error.middleware.js';
 import mainRouter from './src/routes/main.routes.js';
@@ -25,6 +25,7 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
+    await connectDB();
     await initializeSystem();
     app.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);
