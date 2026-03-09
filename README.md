@@ -20,6 +20,7 @@ Backend robusto para sistema de gestión de noticias que proporciona autenticaci
 - Subida y almacenamiento robusto de imágenes locales con Multer (`multipart/form-data`)
 - Paginación en endpoints de listado
 - Arquitectura modular (Controller → Service → Repository) totalmente documentada con JSDoc
+- Script avanzado de Seeding (`seedNews.ts`) para generar artículos peridísticos orgánicos y entornos de pre-producción completos.
 - Configuración de CORS para múltiples entornos
 - Sistema de logging estructurado con Pino
 - Testing Unitario y de Integración con Vitest + Supertest
@@ -93,6 +94,7 @@ npm run create-superadmin
 - `npm run test` - Ejecuta la suite de pruebas unitarias y de integración (Vitest)
 - `npm run create-superadmin` - Crea usuario superadmin
 - `npm run delete-superadmin` - Elimina usuario superadmin
+- `npm run seed` - Limpia y puebla la base de datos de noticias con 31 artículos de corte periodístico realista (Requiere Superadmin previo).
 - `npm run type-check` - Verifica tipos TypeScript
 - `npm run lint` - Ejecuta ESLint para verificar código
 - `npm run lint:fix` - Ejecuta ESLint y corrige errores automáticamente

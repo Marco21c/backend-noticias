@@ -12,6 +12,7 @@
     "start:dev": "cross-env NODE_ENV=development tsx watch index.ts",
     "create-superadmin": "cross-env NODE_ENV=production tsx src/scripts/createSuperAdmin.ts",
     "delete-superadmin": "tsx src/scripts/deleteSuperAdmin.ts",
+    "seed": "tsx src/scripts/seedNews.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
