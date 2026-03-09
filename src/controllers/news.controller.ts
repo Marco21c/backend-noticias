@@ -35,11 +35,12 @@ export class NewsController {
     async getNews(req: Request, res: Response): Promise<Response> {
         const query = res.locals.validated?.query as NewsQueryRequestDto | undefined;
         const pagination = res.locals.validated?.query as NewsPaginationQueryDto | undefined;
+        const userRole = (req as any).user?.role;
         
         const result = await this.newsService.getNewsPaginated(query, {
             page: pagination?.page || 1,
             limit: pagination?.limit || 10
-        });
+        }, userRole);
         
         const payload = {
             items: result.results.map(toNewsPublicResponseDto),
